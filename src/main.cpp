@@ -24,7 +24,7 @@ Q_DECL_EXPORT int main(int argc, char **argv)
         app.installTranslator( &translator );
     }
 
-    new WriterUI(&app);
+    new writely::WriterUI(&app);
 
     // we complete the transaction started in the app constructor and start the client event loop here
     return Application::exec();

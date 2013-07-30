@@ -103,7 +103,7 @@ Page {
                 if (indexPath >= fileModels.size()) return;
                 var entry = fileModels.value( indexPath );
                 if (entry.type == 'file') {
-                    actionOpenFile(entry);                    
+                    actionOpenFile( entry, {focusEditor:true} );                    
                 }
             }
         } // end of ListView
@@ -148,7 +148,15 @@ Page {
         fileModels.append(itemData);
     }
     
-    function actionOpenFile(fileInfo) {
+    /**
+     * @param    options    :focusEditor
+     *                      :focusTitle
+     *                      :clearTitle 
+     */
+    function actionOpenFile(fileInfo, options) {
+        if (options === undefined || options === null) 
+            options = {};
+            
         console.log('[Document Browser]:actionOpenFile', fileInfo);
         var filePath = fileInfo.path;
         if ( !writerApp.isFileLoadable(filePath) ) {
@@ -170,6 +178,15 @@ Page {
         editor.beginEditing();
         
         rootNavigationPane.push(editor);
+        
+        if (options.focusEditor) {
+            editor.focusEditor();
+        }
+        else if (options.focusTitle) {
+            editor.focusTitle();
+        }
+        if (options.clearTitle)
+            editor.clearTitle();
     }
     
     /*
@@ -184,12 +201,14 @@ Page {
      * Create a new untitled document and open the editor to edit
      */
     function actionNewDocument() {
-        var newTitle = writerApp.createEmptyFile( documentPath );        
-        console.log('actionNewDocument', newTitle);
-        if (newTitle.length == 0) {
-            //TODO show message
+        var newFile = writerApp.createEmptyFile( documentPath );
+        var isValid = newFile.hasOwnProperty('name');
+        console.log('actionNewDocument', isValid );
+        if (!isValid) {
+            //TODO show messages
             return;
         }
         reloadDirectory();
+        actionOpenFile( newFile, {focusTitle:true, clearTitle:true} );
     }
 } // end of Page

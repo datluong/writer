@@ -6,7 +6,14 @@
 #include <QVariant>
 #include <QVariantList>
 
+#include <bb/cascades/NavigationPane>
+#include <bb/cascades/Page>
+
+using namespace bb::cascades;
+
 namespace bb { namespace cascades { class Application; }}
+
+namespace writely {
 
 /*!
  * @brief Application pane object
@@ -24,11 +31,19 @@ public:
     Q_INVOKABLE bool isFileLoadable(QString filePath);
     Q_INVOKABLE QString loadFileContent(QString filePath);
     Q_INVOKABLE int saveDocument(QString filePath, QString documentTitle, QString documentContent);
-    Q_INVOKABLE QString createEmptyFile( QString documentPath );
+    Q_INVOKABLE QVariantMap createEmptyFile( QString documentPath );
+
 private:
     QString correctFileName(const QString& fileName);
     QString untitledFilePath(const QString& path, int counter);
+    QString availableUntitledFilePath( const QString& path);
+
+    NavigationPane* mRootNavigationPane;
+
+private slots:
+	void onAppAboutToQuit();
 };
 
+}
 
 #endif /* ApplicationUI_HPP_ */

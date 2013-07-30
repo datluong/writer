@@ -3,30 +3,31 @@ BASEDIR =  $$quote($$_PRO_FILE_PWD_)
 
 device {
     CONFIG(debug, debug|release) {
-        SOURCES +=  $$quote($$BASEDIR/src/WriterUI.cpp) \
-                 $$quote($$BASEDIR/src/main.cpp)
+        SOURCES +=  $$quote($$BASEDIR/src/main.cpp) \
+                 $$quote($$BASEDIR/src/writely/WriterUI.cpp)
 
-        HEADERS +=  $$quote($$BASEDIR/src/WriterUI.hpp)
+        HEADERS +=  $$quote($$BASEDIR/src/writely/WriterUI.hpp)
     }
 
     CONFIG(release, debug|release) {
-        SOURCES +=  $$quote($$BASEDIR/src/WriterUI.cpp) \
-                 $$quote($$BASEDIR/src/main.cpp)
+        SOURCES +=  $$quote($$BASEDIR/src/main.cpp) \
+                 $$quote($$BASEDIR/src/writely/WriterUI.cpp)
 
-        HEADERS +=  $$quote($$BASEDIR/src/WriterUI.hpp)
+        HEADERS +=  $$quote($$BASEDIR/src/writely/WriterUI.hpp)
     }
 }
 
 simulator {
     CONFIG(debug, debug|release) {
-        SOURCES +=  $$quote($$BASEDIR/src/WriterUI.cpp) \
-                 $$quote($$BASEDIR/src/main.cpp)
+        SOURCES +=  $$quote($$BASEDIR/src/main.cpp) \
+                 $$quote($$BASEDIR/src/writely/WriterUI.cpp)
 
-        HEADERS +=  $$quote($$BASEDIR/src/WriterUI.hpp)
+        HEADERS +=  $$quote($$BASEDIR/src/writely/WriterUI.hpp)
     }
 }
 
-INCLUDEPATH +=  $$quote($$BASEDIR/src)
+INCLUDEPATH +=  $$quote($$BASEDIR/src/writely) \
+         $$quote($$BASEDIR/src)
 
 CONFIG += precompile_header
 

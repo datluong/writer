@@ -1,7 +1,8 @@
 import bb.cascades 1.0
 
 Page {
-    id: editorPage    
+    id: editorPage
+    objectName: "editorPage"
     actionBarAutoHideBehavior: ActionBarAutoHideBehavior.Disabled
     actionBarVisibility: ChromeVisibility.Hidden
     property string documentTitle: '';
@@ -39,6 +40,13 @@ Page {
                         }
                         onTextChanging: {
                             documentChanged = true;
+                            console.log('[titleTextArea]onTextChanging ->',text);
+                            if (text.length > 0 && text.indexOf("\n") == text.length-1) {
+                                console.log('enter key detected');
+                                // remove the enterKey
+                                titleTextArea.text = text.substring(0, text.length-1) ;                               
+                                focusEditor();
+                            }
                         }
                     }
                 }
@@ -60,7 +68,7 @@ Page {
                         textStyle.fontSizeValue: 7
                         scrollMode: TextAreaScrollMode.Elastic
                         hintText: ''
-//                        text: 'Not just another book about how to improve our personal lives, The Think Big Manifesto, a New York Times Bestseller, is a book that challenges its readers to think.\n\nThinking big is about being fully self-expressed in the face of all the forces that conspire to pacify our drive; it is about our hunger to be the most we can be. But the transformation to thinking big is far more than personal.'
+                        minHeight: 480
                         text: ""
                         implicitLayoutAnimationsEnabled: false
                         onTextChanging: {          
@@ -95,7 +103,7 @@ Page {
                 }
                 Label {
                     id: wordCountLabel
-                    text: "72 words"
+                    text: "0 word"
                     textStyle.fontWeight: FontWeight.W200
                     textStyle.fontSize: FontSize.PointValue
                     textStyle.fontSizeValue: 7
@@ -181,4 +189,19 @@ Page {
         }
     }
     
+    function handleAppExitEvent() {
+        saveDocument();
+    }
+    
+    function focusEditor() {
+        editorTextArea.requestFocus();
+    }
+    
+    function focusTitle() {
+        titleTextArea.requestFocus();
+    }
+    
+    function clearTitle() {
+        titleTextArea.resetText();
+    }
 } // end Page

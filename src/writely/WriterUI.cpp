@@ -9,8 +9,13 @@
 #include <QFileInfoList>
 #include <QFileInfo>
 #include <QDebug>
+#include <QMetaObject>
+#include <QMetaMethod>
+
 
 using namespace bb::cascades;
+
+namespace writely {
 
 WriterUI::WriterUI(bb::cascades::Application *app)
 : QObject(app)
@@ -24,22 +29,24 @@ WriterUI::WriterUI(bb::cascades::Application *app)
     // set created root object as a scene
     app->setScene(root);
 
-    // load data from ./documents folder
+    mRootNavigationPane = dynamic_cast<NavigationPane*>(root);
+    qDebug() << "rootPane" << (mRootNavigationPane!=NULL);
 
+    connect( app, SIGNAL(aboutToQuit()), this, SLOT(onAppAboutToQuit()) );
 }
 
 /**
  * Create an empty file and return the new path.
- * @return   empty string if the new document couldn't be created in the specified path
+ * @return   empty map if the new document couldn't be created in the specified path
  */
-QString WriterUI::createEmptyFile( QString documentPath ) {
+QVariantMap WriterUI::createEmptyFile( QString documentPath ) {
 	if (documentPath.size() > 0 && !documentPath.startsWith("/"))
 			documentPath = "/" + documentPath;
 	QString destPath = QDir::currentPath() + "/data" + documentPath;
 	qDebug() << "WriterUI::createEmptyFile:path" << documentPath << "fullPath" << destPath;
 
 	QDir dir(destPath);
-	if (!dir.exists()) return "";
+	if (!dir.exists()) return QVariantMap();
 
 	int counter = 0;
 	while (true) {
@@ -53,10 +60,16 @@ QString WriterUI::createEmptyFile( QString documentPath ) {
 	QString newFileName = untitledFilePath(destPath, counter);
 	QFile newFile( newFileName );
 	if ( !newFile.open(QIODevice::WriteOnly) )
-		return "";
+		return QVariantMap();
 
 	newFile.close();
-	return newFileName;
+
+	QFileInfo fileInfo( newFile );
+	QVariantMap entry;
+	entry["type"] = "file";
+	entry["name"] = fileInfo.baseName();
+	entry["path"] = fileInfo.filePath();
+	return entry;
 }
 
 QString WriterUI::untitledFilePath(const QString& path, int counter) {
@@ -65,6 +78,23 @@ QString WriterUI::untitledFilePath(const QString& path, int counter) {
 		fileName += QString(" (%1)").arg(counter);
 	fileName += ".txt";
 	return fileName;
+}
+
+/**
+ * Only return the name of available file
+ */
+QString WriterUI::availableUntitledFilePath( const QString& path) {
+	int counter = 0;
+	while (true) {
+		QString fileName = untitledFilePath(path, counter);
+		QFile file(fileName);
+		if (!file.exists())
+			break;
+		counter ++;
+	}
+	QString fullFilePath = untitledFilePath("", counter);
+	QFileInfo info(fullFilePath);
+	return info.baseName();
 }
 
 /**
@@ -80,7 +110,7 @@ QVariantList WriterUI::listDirectory(QString path) {
 	if (!dir.exists())
 		return docList;
 
-	QFileInfoList infoList = dir.entryInfoList( QDir::NoFilter, QDir::DirsFirst | QDir::Name );
+	QFileInfoList infoList = dir.entryInfoList( QDir::NoFilter, QDir::DirsFirst | QDir::Name  | QDir::IgnoreCase );
 	foreach (QFileInfo fileInfo, infoList) {
 		qDebug() << "entry:name" << fileInfo.fileName() << "path:" << fileInfo.filePath() << "isDir:" << fileInfo.isDir() << "isFile:" << fileInfo.isFile();
 		if ( fileInfo.fileName() == "." || fileInfo.fileName() == ".." ) continue;
@@ -144,9 +174,26 @@ int WriterUI::saveDocument(QString filePath, QString documentTitle, QString docu
 	QFileInfo fileInfo( file );
 	qDebug() << "File basename:" << fileInfo.baseName() << "completeBaseName:" << fileInfo.completeBaseName();
 	QString newFileName = correctFileName( documentTitle );
+
+	// if newFileName is empty, pick an unused name
+	if (newFileName.isEmpty()) {
+		newFileName = availableUntitledFilePath( fileInfo.path() );
+	}
+
 	if (newFileName != fileInfo.baseName()) {
 		// rename the file
 		QString newName = fileInfo.path() + "/" + newFileName + ".txt";
+		if ( QFile::exists(newName) ) {
+			// if there is already a file with given name, add a counter value to filename
+			int counter = 0;
+			while (true) {
+				QString fName = fileInfo.path() + "/" + newFileName + ( counter==0?"":QString(" (%1)").arg(counter) ) + ".txt";
+				if (!QFile::exists(fName)) break;
+				counter++;
+			}
+			newName = fileInfo.path() + "/" + newFileName + ( counter==0?"":QString(" (%1)").arg(counter) ) + ".txt";
+		}
+
 		qDebug() << "Update document's name -> " << newName;
 		if (!file.rename(newName))
 			return 0x1010;
@@ -176,5 +223,32 @@ QString WriterUI::correctFileName(const QString& fileName) {
 		QChar c = forbiddenChars.at(i);
 		name = name.replace( c, '-' );
 	}
-	return name;
+	name = name.replace( "\n", "");
+	return name.trimmed();
 }
+
+void dumpMetaObject(const QMetaObject* metaObject) {
+	qDebug() << "dumpMetaObject" << metaObject;
+	if (metaObject == NULL) return;
+	qDebug() << "className:" << metaObject->className();
+	qDebug() << "methodCount:" << metaObject->methodCount();
+	for (int i = 0 ; i < metaObject->methodCount();i++) {
+		QMetaMethod method = metaObject->method(i);
+		qDebug() << "method #" << i << ":signature:" << method.signature() << ":returnType:" << method.typeName();
+	}
+}
+
+void WriterUI::onAppAboutToQuit() {
+	qDebug() << "WriterUI::onAppAboutToQuit()";
+	qDebug() << "Pages Count:" << mRootNavigationPane->count();
+	if (mRootNavigationPane->count() > 0) {
+		Page* page = mRootNavigationPane->at( mRootNavigationPane->count()-1 );
+		if (page) {
+			if ( page->objectName() == "editorPage" ) {
+				QMetaObject::invokeMethod(page, "handleAppExitEvent" );
+			}
+		}
+	}
+}
+
+} // end namespace
