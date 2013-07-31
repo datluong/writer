@@ -30,18 +30,26 @@ public:
     Q_INVOKABLE QVariantList listDirectory(QString path);
     Q_INVOKABLE bool isFileLoadable(QString filePath);
     Q_INVOKABLE QString loadFileContent(QString filePath);
-    Q_INVOKABLE int saveDocument(QString filePath, QString documentTitle, QString documentContent);
+    Q_INVOKABLE int saveDocument(QString filePath, QString documentTitle, QString documentContent, QVariantMap saveOptions);
+    Q_INVOKABLE bool documentPathMathTitle(QString filePath, QString documentTitle);
     Q_INVOKABLE QVariantMap createEmptyFile( QString documentPath );
     Q_INVOKABLE bool deleteFile(QString filePath);
 private:
+    NavigationPane* mRootNavigationPane;
+
     QString correctFileName(const QString& fileName);
     QString untitledFilePath(const QString& path, int counter);
     QString availableUntitledFilePath( const QString& path,  const QString& originalPath );
 
-    NavigationPane* mRootNavigationPane;
+    void initializeDocumentFolder();
+    void initializeAutosave();
+
+    Page* currentEditorPage();
 
 private slots:
 	void onAppAboutToQuit();
+	void onAutosaveTimerTimeout();
+
 };
 
 }

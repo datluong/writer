@@ -11,6 +11,7 @@
 #include <QDebug>
 #include <QMetaObject>
 #include <QMetaMethod>
+#include <QTimer>
 
 
 using namespace bb::cascades;
@@ -20,6 +21,9 @@ namespace writely {
 WriterUI::WriterUI(bb::cascades::Application *app)
 : QObject(app)
 {
+	// filesystem initialization
+	initializeDocumentFolder();
+
     // create scene document from main.qml asset
     // set parent to created document to ensure it exists for the whole application lifetime
     QmlDocument *qml = QmlDocument::create("asset:///main.qml").parent(this);
@@ -33,6 +37,25 @@ WriterUI::WriterUI(bb::cascades::Application *app)
     qDebug() << "rootPane" << (mRootNavigationPane!=NULL);
 
     connect( app, SIGNAL(aboutToQuit()), this, SLOT(onAppAboutToQuit()) );
+
+    initializeAutosave();
+}
+
+void WriterUI::initializeDocumentFolder() {
+	QString documentsPath = QDir::homePath() + "/documents";
+	QDir dir(documentsPath);
+	if (!dir.exists())
+		dir.mkpath(documentsPath);
+}
+
+/**
+ * Initilize Auto-save module
+ */
+void WriterUI::initializeAutosave() {
+	QTimer* theTimer = new QTimer(this);
+	theTimer->setInterval( 15000 ); // every 15 secs
+	connect( theTimer, SIGNAL(timeout()), this, SLOT(onAutosaveTimerTimeout()) );
+	theTimer->start();
 }
 
 /**
@@ -42,7 +65,7 @@ WriterUI::WriterUI(bb::cascades::Application *app)
 QVariantMap WriterUI::createEmptyFile( QString documentPath ) {
 	if (documentPath.size() > 0 && !documentPath.startsWith("/"))
 			documentPath = "/" + documentPath;
-	QString destPath = QDir::currentPath() + "/data" + documentPath;
+	QString destPath = QDir::homePath() + "/documents" + documentPath;
 	qDebug() << "WriterUI::createEmptyFile:path" << documentPath << "fullPath" << destPath;
 
 	QDir dir(destPath);
@@ -110,7 +133,9 @@ QVariantList WriterUI::listDirectory(QString path) {
 	qDebug() << "WriterUI::listDirectory:path:" << path;
 
 	QVariantList docList;
-	QString destPath = QDir::currentPath() + "/data";
+	QString destPath = QDir::homePath() + "/documents";
+	if (path.length() > 0)
+		destPath += "/" + path;
 
 	QDir dir(destPath);
 	if (!dir.exists())
@@ -169,49 +194,62 @@ QString WriterUI::loadFileContent(QString filePath) {
 	return QString::fromUtf8(data.constData());
 }
 
+bool WriterUI::documentPathMathTitle(QString filePath, QString documentTitle) {
+	QString newFileName = correctFileName( documentTitle );
+	if (newFileName.isEmpty())
+		return false;
+	QFileInfo fileInfo(filePath);
+	return fileInfo.baseName() == documentTitle;
+}
+
 /**
  * Save Document
  * @param   filePath           The origininal path of document
  * @param   documentTitle      Document's title. The saved file might be renamed if the title is changed.
  * @param   documentContent    Content of the document
+ * @param   saveOptions        :keepTitle    Do not rename the file if title is changed
  * @return                     0 if there is no error,
  *                             1 if there is no error, but the document name has been changed
  *                             or an non-zero error code
  */
-int WriterUI::saveDocument(QString filePath, QString documentTitle, QString documentContent) {
+int WriterUI::saveDocument(QString filePath, QString documentTitle, QString documentContent, QVariantMap saveOptions) {
+	bool keepTitle    = ( saveOptions.contains("keepTitle") && saveOptions["keepTitle"].toBool() );
 	bool titleChanged = false;
-	qDebug() << "WriterUI::saveDocument:filePath" << filePath << ":title:" << documentTitle;
+	qDebug() << "WriterUI::saveDocument:filePath" << filePath << ":title:" << documentTitle<< ":saveOptions:" << saveOptions;
 	QFile file(filePath);
 
 	if ( !file.exists() ) return 0x1000;
+
+	if (!keepTitle) {
 	// rename if needed
-	QFileInfo fileInfo( file );
-	qDebug() << "File basename:" << fileInfo.baseName() << "completeBaseName:" << fileInfo.completeBaseName();
-	QString newFileName = correctFileName( documentTitle );
+		QFileInfo fileInfo( file );
+		qDebug() << "File basename:" << fileInfo.baseName() << "completeBaseName:" << fileInfo.completeBaseName();
+		QString newFileName = correctFileName( documentTitle );
 
-	// if newFileName is empty, pick an unused name
-	if (newFileName.isEmpty()) {
-		newFileName = availableUntitledFilePath( fileInfo.path(), filePath );
-	}
-
-	if (newFileName != fileInfo.baseName()) {
-		// rename the file
-		QString newName = fileInfo.path() + "/" + newFileName + ".txt";
-		if ( QFile::exists(newName) ) {
-			// if there is already a file with given name, add a counter value to filename
-			int counter = 0;
-			while (true) {
-				QString fName = fileInfo.path() + "/" + newFileName + ( counter==0?"":QString(" %1").arg(counter) ) + ".txt";
-				if (!QFile::exists(fName)) break;
-				counter++;
-			}
-			newName = fileInfo.path() + "/" + newFileName + ( counter==0?"":QString(" %1").arg(counter) ) + ".txt";
+		// if newFileName is empty, pick an unused name
+		if (newFileName.isEmpty()) {
+			newFileName = availableUntitledFilePath( fileInfo.path(), filePath );
 		}
 
-		qDebug() << "Update document's name -> " << newName;
-		if (!file.rename(newName))
-			return 0x1010;
-		titleChanged = true;
+		if (newFileName != fileInfo.baseName()) {
+			// rename the file
+			QString newName = fileInfo.path() + "/" + newFileName + ".txt";
+			if ( QFile::exists(newName) ) {
+				// if there is already a file with given name, add a counter value to filename
+				int counter = 0;
+				while (true) {
+					QString fName = fileInfo.path() + "/" + newFileName + ( counter==0?"":QString(" %1").arg(counter) ) + ".txt";
+					if (!QFile::exists(fName)) break;
+					counter++;
+				}
+				newName = fileInfo.path() + "/" + newFileName + ( counter==0?"":QString(" %1").arg(counter) ) + ".txt";
+			}
+
+			qDebug() << "Update document's name -> " << newName;
+			if (!file.rename(newName))
+				return 0x1010;
+			titleChanged = true;
+		}
 	}
 	// TODO
 
@@ -252,17 +290,44 @@ void dumpMetaObject(const QMetaObject* metaObject) {
 	}
 }
 
-void WriterUI::onAppAboutToQuit() {
-	qDebug() << "WriterUI::onAppAboutToQuit()";
-	qDebug() << "Pages Count:" << mRootNavigationPane->count();
+/**
+ * @return the editor page if it is on the top of navigation stack. Otherwise return 0;
+ */
+Page* WriterUI::currentEditorPage() {
 	if (mRootNavigationPane->count() > 0) {
 		Page* page = mRootNavigationPane->at( mRootNavigationPane->count()-1 );
 		if (page) {
 			if ( page->objectName() == "editorPage" ) {
-				QMetaObject::invokeMethod(page, "handleAppExitEvent" );
+				return page;
 			}
 		}
 	}
+	return NULL;
+}
+
+void WriterUI::onAppAboutToQuit() {
+	qDebug() << "WriterUI::onAppAboutToQuit()";
+//	qDebug() << "Pages Count:" << mRootNavigationPane->count();
+//	if (mRootNavigationPane->count() > 0) {
+//		Page* page = mRootNavigationPane->at( mRootNavigationPane->count()-1 );
+//		if (page) {
+//			if ( page->objectName() == "editorPage" ) {
+//				QMetaObject::invokeMethod(page, "handleAppExitEvent" );
+//			}
+//		}
+//	}
+	Page* page = currentEditorPage();
+	if (page)
+		QMetaObject::invokeMethod(page, "handleAppExitEvent" );
+}
+
+/**
+ * Fire after a certain period of time
+ */
+void WriterUI::onAutosaveTimerTimeout() {
+	Page* page = currentEditorPage();
+	if (page)
+		QMetaObject::invokeMethod(page, "handleAutoSaveEvent" );
 }
 
 } // end namespace

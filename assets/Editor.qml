@@ -40,7 +40,6 @@ Page {
                         }
                         onTextChanging: {
                             documentChanged = true;
-                            console.log('[titleTextArea]onTextChanging ->',text);
                             if (text.length > 0 && text.indexOf("\n") == text.length-1) {
                                 console.log('enter key detected');
                                 // remove the enterKey
@@ -179,8 +178,12 @@ Page {
      * Save document
      */
     function saveDocument() {      
-        if (!documentChanged) return;
-        var status = writerApp.saveDocument( documentPath, titleTextArea.text, editorTextArea.text);
+        if (!documentChanged) {
+            // save if title don't match path
+            if (writerApp.documentPathMathTitle(documentPath, titleTextArea.text))
+                return;
+        }
+        var status = writerApp.saveDocument( documentPath, titleTextArea.text, editorTextArea.text, {});
         console.log('saveDocument. result: ', status, 'documentchanged:', documentChanged );
         if (status == 1) { // document title has changed
             documentTitleUpdated(titleTextArea.text);            
@@ -192,6 +195,20 @@ Page {
     
     function handleAppExitEvent() {
         saveDocument();
+    }
+    
+    function handleAutoSaveEvent() {
+        if (documentChanged) {
+            console.log('autosaving', documentPath);
+            var status = writerApp.saveDocument(documentPath, titleTextArea.text, editorTextArea.text, {
+                    keepTitle:true
+                });
+            console.log('[autoSave]saveDocument. result: ', status);
+            documentChanged = false;
+            if (status != 0 && status != -1) {
+                // TODO show error message
+            }
+        }
     }
     
     function focusEditor() {
