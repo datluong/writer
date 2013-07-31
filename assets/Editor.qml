@@ -104,7 +104,7 @@ Page {
                 Label {
                     id: wordCountLabel
                     text: "0 word"
-                    textStyle.fontWeight: FontWeight.W200
+                    textStyle.fontWeight: FontWeight.W400
                     textStyle.fontSize: FontSize.PointValue
                     textStyle.fontSizeValue: 7
                     textStyle.color: Color.White

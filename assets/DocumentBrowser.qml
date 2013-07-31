@@ -2,8 +2,11 @@ import bb.cascades 1.0
 import bb.system 1.0
 
 Page {
-    property string documentPath: '';
     id: documentBrowserPage
+    
+    // the path for browsing. Path must start with '/', with root path is '/'
+    // format: /[..]/[..]
+    property string documentPath: '/';
     
     Container {
         layout: StackLayout {}
@@ -11,16 +14,29 @@ Page {
         rightPadding: 24        
         Container{}
         Container {
-            // title Container            
+            // title Container
+            id: titleContainer
+            implicitLayoutAnimationsEnabled: false
             topPadding: 24
             bottomPadding: 28
             horizontalAlignment: HorizontalAlignment.Fill
             Label {
+               implicitLayoutAnimationsEnabled: false
+                visible: true
+                verticalAlignment: VerticalAlignment.Center
                 id: titleLabel
                 text: "WRITER"
                 textStyle.fontWeight: FontWeight.W600
                 horizontalAlignment: HorizontalAlignment.Center
-            }            
+            }
+            TextField {
+                implicitLayoutAnimationsEnabled: false
+                id: titleTextField
+                visible: false
+                textStyle.textAlign: TextAlign.Center
+                backgroundVisible: false
+                focusHighlightEnabled: false
+            }
             
         } // end Title Container
         Container {
@@ -155,6 +171,9 @@ Page {
                 if (entry.type == 'file') {
                     actionOpenFile( entry, {focusEditor:true} );                    
                 }
+                else if (entry.type == 'folder' ) {
+                    actionOpenFolder( entry );
+                }
             }
 
             function actionDeleteSelectedItems() {
@@ -222,11 +241,34 @@ Page {
             title: "New Folder"
             ActionBar.placement: ActionBarPlacement.OnBar
             imageSource: "asset:///images/ic_add_folder.png"
+            onTriggered: {
+                actionNewFolder();
+            }
+        },
+        ActionItem {
+            title: "Test Edit"
+            ActionBar.placement: ActionBarPlacement.OnBar
+            imageSource: "asset:///images/ic_rename.png"
+            onTriggered: {
+                if (titleLabel.visible) {
+                    // show editor
+                    titleLabel.visible = false;
+                    titleTextField.visible = true;
+                    titleContainer.topPadding = 6;
+                    titleContainer.bottomPadding = 10;
+                }
+                else {
+                    titleLabel.visible     = true; 
+                    titleTextField.visible = false;
+                    titleContainer.topPadding = 24;
+                    titleContainer.bottomPadding = 28;
+                }
+            }
         }
     ]
     
     onCreationCompleted: {
-        console.log('onCreationCompleted:documentPath:', documentPath );
+        console.log('[DocumentBrowser]onCreationCompleted:documentPath:', documentPath );
 //        fileModels.append({
 //                name: 'My random thoughts asdsadlkjsa dlkasjdlsakjdaslkd aslkjdaslkdj asl dalskjdaslkdj asd laskjdslakjda',
 //                type: 'folder'
@@ -246,6 +288,31 @@ Page {
         fileModels.clear();
         var itemData = writerApp.listDirectory(documentPath);
         fileModels.append(itemData);
+        updateTitle();
+    }
+    
+    function updateTitle() {
+        var comps = documentPath.split('/');
+        if (comps.length > 0) {
+            var name = comps[ comps.length - 1 ];
+            if (name.length > 0) {
+                titleLabel.text = name;
+            }
+        }
+    }
+
+    function actionOpenFolder( folderInfo ) {
+        if ( folderInfo.type != 'folder' )
+            return;
+        console.log('[DocumentBrowser]actionOpenFolder:',folderInfo.path);
+        var relativePath = writerApp.relativePath( folderInfo.path );
+        console.log('[DocumentBrowser]relativePath',relativePath);
+        
+        var newBrowser = documentBrowserPageDef.createObject();
+        newBrowser.documentPath = relativePath;
+        newBrowser.reloadDirectory();
+
+        rootNavigationPane.push(newBrowser);
     }
     
     /**
@@ -298,6 +365,14 @@ Page {
     }
     
     /**
+     * Create a new untitled folder
+     */     
+    function actionNewFolder() {
+        var newFolder = writerApp.createEmptyFolder( documentPath );
+        console.log('[DocumentBrowser]actionNewFolder', newFolder);
+    }
+    
+    /**
      * Create a new untitled document and open the editor to edit
      */
     function actionNewDocument() {
@@ -310,6 +385,15 @@ Page {
         }
         reloadDirectory();
         actionOpenFile( newFile, {focusTitle:true, clearTitle:true} );
+    }
+
+    /**
+     * QML Page defines glMetaData() method for inter-operating with other QML Objects
+     */
+    function glMetaData() {
+        return {
+            pageType: 'documentBrowser'
+        };
     }
 
 } // end of Page

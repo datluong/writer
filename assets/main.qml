@@ -12,6 +12,10 @@ NavigationPane {
             id: editorPageDef
             source: "Editor.qml"
         },
+        ComponentDefinition {
+            id: documentBrowserPageDef
+            source: "DocumentBrowser.qml"
+        },
         SystemDialog {
             id: deleteConfirmationDialog
             title: "Delete"
@@ -19,9 +23,22 @@ NavigationPane {
         }
     ]
     
+    onCreationCompleted: {
+        // disable js logging
+//        console.log = function() {}        
+    }
+    
     function experimentZone() {        
     }
     
+    onPushTransitionEnded: {
+        if (page.hasOwnProperty('glMetaData')) {
+            var meta = page.glMetaData();
+            if (meta.pageType == 'documentBrowser') {
+                console.log('browserPushed.');
+            }
+        }
+    }
     onPopTransitionEnded: {
         console.log( '[main]OnPopTransitionEnded', page );        
         if ( page.hasOwnProperty('glMetaData') )  {

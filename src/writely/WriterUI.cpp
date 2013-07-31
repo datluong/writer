@@ -59,6 +59,40 @@ void WriterUI::initializeAutosave() {
 }
 
 /**
+ * Create an empty folder and return the folder info
+ * @param    documentPath    start with "/"
+ */
+QVariantMap WriterUI::createEmptyFolder( QString documentPath ) {
+	QString destPath = QDir::homePath() + "/documents" + documentPath;
+	qDebug() << "WriterUI::createEmptyFolder" << ":documentPath:" << documentPath << "destPath:" << destPath;
+	QDir dir(destPath);
+	if (!dir.exists()) return QVariantMap();
+
+	int counter = 0;
+	while (true) {
+		QString folderName = untitledFolderPath(destPath, counter);
+		QDir newFolder(folderName);
+		if (!newFolder.exists())
+			break;
+		counter ++;
+	}
+
+	QString newFolderName =  untitledFolderPath(destPath, counter);
+	QDir newFolder( newFolderName );
+
+	if (!newFolder.mkdir( newFolderName ))
+		return QVariantMap();
+
+	QFileInfo folderInfo( newFolderName );
+	QVariantMap entry;
+	entry["type"] = "folder";
+	entry["name"] = folderInfo.baseName();
+	entry["path"] = folderInfo.filePath();
+	qDebug() << "Created New Folder:" << entry;
+	return entry;
+}
+
+/**
  * Create an empty file and return the new path.
  * @return   empty map if the new document couldn't be created in the specified path
  */
@@ -95,6 +129,13 @@ QVariantMap WriterUI::createEmptyFile( QString documentPath ) {
 	return entry;
 }
 
+QString WriterUI::untitledFolderPath(QString path, int counter) {
+	QString folderName = path + "/Untitled Folder";
+	if (counter > 0)
+		folderName += QString(" %1").arg(counter);
+	return folderName;
+}
+
 QString WriterUI::untitledFilePath(const QString& path, int counter) {
 	QString fileName = path + "/Untitled";
 	if (counter > 0)
@@ -126,6 +167,14 @@ QString WriterUI::availableUntitledFilePath( const QString& path, const QString&
 	return info.baseName();
 }
 
+QString WriterUI::relativePath(QString filePath) {
+	QString rootPath = QDir::homePath() + "/documents";
+	QString relativePath = filePath.replace(rootPath,"");
+	if (relativePath.isEmpty())
+		relativePath = "/";
+	return relativePath;
+}
+
 /**
  * List file in given directory and return a list of QVariantMap for QML controls
  */
@@ -135,7 +184,7 @@ QVariantList WriterUI::listDirectory(QString path) {
 	QVariantList docList;
 	QString destPath = QDir::homePath() + "/documents";
 	if (path.length() > 0)
-		destPath += "/" + path;
+		destPath += path;
 
 	QDir dir(destPath);
 	if (!dir.exists())
@@ -143,7 +192,7 @@ QVariantList WriterUI::listDirectory(QString path) {
 
 	QFileInfoList infoList = dir.entryInfoList( QDir::NoFilter, QDir::DirsFirst | QDir::Name  | QDir::IgnoreCase );
 	foreach (QFileInfo fileInfo, infoList) {
-		qDebug() << "entry:name" << fileInfo.fileName() << "path:" << fileInfo.filePath() << "isDir:" << fileInfo.isDir() << "isFile:" << fileInfo.isFile();
+//		qDebug() << "entry:name" << fileInfo.fileName() << "path:" << fileInfo.filePath() << "isDir:" << fileInfo.isDir() << "isFile:" << fileInfo.isFile();
 		if ( fileInfo.fileName() == "." || fileInfo.fileName() == ".." ) continue;
 		if ( fileInfo.isDir() ) {
 			QVariantMap entry;
