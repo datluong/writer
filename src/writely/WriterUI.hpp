@@ -32,11 +32,11 @@ public:
     Q_INVOKABLE QString loadFileContent(QString filePath);
     Q_INVOKABLE int saveDocument(QString filePath, QString documentTitle, QString documentContent);
     Q_INVOKABLE QVariantMap createEmptyFile( QString documentPath );
-
+    Q_INVOKABLE bool deleteFile(QString filePath);
 private:
     QString correctFileName(const QString& fileName);
     QString untitledFilePath(const QString& path, int counter);
-    QString availableUntitledFilePath( const QString& path);
+    QString availableUntitledFilePath( const QString& path,  const QString& originalPath );
 
     NavigationPane* mRootNavigationPane;
 

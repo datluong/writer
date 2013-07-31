@@ -73,20 +73,26 @@ QVariantMap WriterUI::createEmptyFile( QString documentPath ) {
 }
 
 QString WriterUI::untitledFilePath(const QString& path, int counter) {
-	QString fileName = path + "/untitled";
+	QString fileName = path + "/Untitled";
 	if (counter > 0)
-		fileName += QString(" (%1)").arg(counter);
+		fileName += QString(" %1").arg(counter);
 	fileName += ".txt";
 	return fileName;
 }
 
 /**
  * Only return the name of available file
+ * @param    path  path for generating file
+ * @param    originalPath   A generated name match originalPath is acceptable, regardless the existence of the file with that name
  */
-QString WriterUI::availableUntitledFilePath( const QString& path) {
+QString WriterUI::availableUntitledFilePath( const QString& path, const QString& originalPath ) {
 	int counter = 0;
 	while (true) {
 		QString fileName = untitledFilePath(path, counter);
+		if (fileName == originalPath) {
+			QFileInfo info(originalPath);
+			return info.baseName();
+		}
 		QFile file(fileName);
 		if (!file.exists())
 			break;
@@ -136,6 +142,14 @@ QVariantList WriterUI::listDirectory(QString path) {
 	return docList;
 }
 
+bool WriterUI::deleteFile(QString filePath) {
+	qDebug() << "WriterUI:deleteFile:" << filePath;
+
+	QFile file(filePath);
+	if (!file.exists()) return false;
+
+	return file.remove();
+}
 
 bool WriterUI::isFileLoadable(QString filePath) {
 	QFile file(filePath);
@@ -177,7 +191,7 @@ int WriterUI::saveDocument(QString filePath, QString documentTitle, QString docu
 
 	// if newFileName is empty, pick an unused name
 	if (newFileName.isEmpty()) {
-		newFileName = availableUntitledFilePath( fileInfo.path() );
+		newFileName = availableUntitledFilePath( fileInfo.path(), filePath );
 	}
 
 	if (newFileName != fileInfo.baseName()) {
@@ -187,11 +201,11 @@ int WriterUI::saveDocument(QString filePath, QString documentTitle, QString docu
 			// if there is already a file with given name, add a counter value to filename
 			int counter = 0;
 			while (true) {
-				QString fName = fileInfo.path() + "/" + newFileName + ( counter==0?"":QString(" (%1)").arg(counter) ) + ".txt";
+				QString fName = fileInfo.path() + "/" + newFileName + ( counter==0?"":QString(" %1").arg(counter) ) + ".txt";
 				if (!QFile::exists(fName)) break;
 				counter++;
 			}
-			newName = fileInfo.path() + "/" + newFileName + ( counter==0?"":QString(" (%1)").arg(counter) ) + ".txt";
+			newName = fileInfo.path() + "/" + newFileName + ( counter==0?"":QString(" %1").arg(counter) ) + ".txt";
 		}
 
 		qDebug() << "Update document's name -> " << newName;

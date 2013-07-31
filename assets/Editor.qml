@@ -65,7 +65,8 @@ Page {
                         textFormat: TextFormat.Plain
                         textStyle.fontWeight: FontWeight.W200
                         textStyle.fontSize: FontSize.PointValue
-                        textStyle.fontSizeValue: 7
+                        // fontSize 7 is small but readable. Recommended size is 7.5  
+                        textStyle.fontSizeValue: 7.5
                         scrollMode: TextAreaScrollMode.Elastic
                         hintText: ''
                         minHeight: 480

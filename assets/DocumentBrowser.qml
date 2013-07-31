@@ -1,7 +1,9 @@
 import bb.cascades 1.0
+import bb.system 1.0
 
 Page {
     property string documentPath: '';
+    id: documentBrowserPage
     
     Container {
         layout: StackLayout {}
@@ -28,13 +30,12 @@ Page {
             preferredHeight: 2
         }
         ListView {
-            dataModel: fileModels
-            onSelectionChanged: {
-                console.log('selectionChanged -> ', indexPath);
-            }            
+            id: documentListView
+            dataModel: fileModels                   
             listItemComponents: [                
-                ListItemComponent {                    
-                    Container {                        
+                ListItemComponent {
+                    Container {                     
+                        id: fileComponent
                         Container {
                             property int containterWith: 0
                             id: listItemContainer
@@ -57,7 +58,7 @@ Page {
                                 textStyle.fontSize: FontSize.XXSmall
                                 attachedObjects: [
                                     LayoutUpdateHandler {
-                                        onLayoutFrameChanged: {                                            
+                                        onLayoutFrameChanged: {                                                    
                                             console.log('[folderIndicator]onLayoutFrameChanged', layoutFrame.width, 'containerWidth', listItemContainer.containterWith);
                                             documentNameLabel.setMaxWidth( listItemContainer.containterWith - layoutFrame.width - 36 );
                                         }
@@ -69,18 +70,39 @@ Page {
                             topMargin: 0
                             bottomMargin: 0
                         }
-                        contextActions: [
+                        contextActions: [                            
                             ActionSet {
+                                title: ListItemData.name
                                 ActionItem {
                                     title: "Sample Action"   
+                                }
+                                DeleteActionItem {
+                                    title: "Delete"
+                                    onTriggered: {
+                                        fileComponent.ListItem.view.actionDeleteListItem(fileComponent.ListItem.indexPath);
+                                    }
                                 }
                             }
                         ] // end of Context Action
                         ListItem.onSelectionChanged: {
+                            console.log('ListItem.onSelectionChanged', selected);
                             listItemContainer.background = selected ? Color.create('#ebebeb') : Color.Transparent;
                         }
                         ListItem.onActivationChanged: {
-                            listItemContainer.background = active ? Color.create('#ebebeb') : Color.Transparent;
+                            var activeChangable = active;
+                            var selection = ListItem.view.selectionList();
+                            console.log('ListItem.onActivationChanged', active,'indexPath:', ListItem.indexPath, selection.length, 'selections:', selection, 'indexOf', selection.indexOf(ListItem.indexPath), 'selectType',typeof(selection));
+                            
+                            if (selection.length > 0) {
+                                for (var i = 0; i < selection.length; i++) {
+                                    console.log('listing selection #',i, ':',selection[i]);
+                                    if (selection[i].length > 0 && selection[i][0] == ListItem.indexPath) {
+                                        console.log('switch active -> true since the row is selected');
+                                        activeChangable = true;
+                                    }
+                                }
+                            }
+                            listItemContainer.background = activeChangable ? Color.create('#ebebeb') : Color.Transparent;
                         }
                         attachedObjects: [
                             LayoutUpdateHandler {
@@ -93,11 +115,39 @@ Page {
                     
                 } // end ListItemComponent Definition
             ]
+            multiSelectAction: MultiSelectActionItem {
+            }
+            multiSelectHandler {
+                actions: [
+                    DeleteActionItem {
+                        onTriggered: {
+                            console.log('[documentBrowser-multiSelectHandler]DeleteAction:length:', documentListView.selectionList().length );
+                            documentListView.actionDeleteSelectedItems();
+                        }
+                    }
+                ]
+                status: 'None selected'                                
+            } // end of ListView's multiSelectHandler
+                                
             attachedObjects: [
                 ArrayDataModel {
                     id: fileModels
                 }
             ]
+            
+            onSelectionChanged: {
+                console.log('selectionChanged -> ', indexPath, 'selectionLength', selectionList().length);
+                var itemSelected = selectionList().length;
+                if (itemSelected == 0) {
+                    multiSelectHandler.status = 'None selected';
+                }  
+                else if (itemSelected == 1) {
+                    multiSelectHandler.status = '1 document selected';
+                }
+                else {
+                    multiSelectHandler.status = '' + itemSelected + ' documents selected';
+                }
+            }
             onTriggered: {
                 console.log('[documentBrowser]listViewTriggered', indexPath);
                 if (indexPath >= fileModels.size()) return;
@@ -106,12 +156,62 @@ Page {
                     actionOpenFile( entry, {focusEditor:true} );                    
                 }
             }
+
+            function actionDeleteSelectedItems() {
+                console.log('actionDeleteSelectedItems');
+                var selection = selectionList();
+                deleteConfirmationDialog.body = 'Delete ' + selection.length + ' selected document' + (selection.length>1?'s':'') + '?';
+                deleteConfirmationDialog.exec();
+                var status = deleteConfirmationDialog.result;
+                if (status == SystemUiResult.ConfirmButtonSelection) {
+                    var deleteIndexPaths = [];
+                    for (var i = 0 ; i < selection.length;i++) {
+                        if (selection[i].length > 0)
+                            deleteIndexPaths.push( selection[i][0] );
+                    }
+                    
+                    // reverse sort
+                    deleteIndexPaths.sort(function(a,b){return b-a});
+                    if (deleteIndexPaths.length > 0) {
+                        for (var i = 0; i < deleteIndexPaths.length;i++) {
+                            var indexPath = deleteIndexPaths[i];
+                            if (indexPath > fileModels.size()) continue;
+                            var entry = fileModels.value( indexPath );
+                            if (entry.type == 'folder') {
+                                //TODO delete
+                            }
+                            else if (entry.type == 'file') {
+                                if (writerApp.deleteFile(entry.path)) 
+                                    fileModels.removeAt(indexPath);
+                            }
+                        }    
+                    }
+                }
+            }
+            
+            function actionDeleteListItem( indexPath) {
+                console.log('actionDeleteListItem:indexPath', indexPath );
+                deleteConfirmationDialog.body = 'Delete the selected document?';
+                deleteConfirmationDialog.exec();
+                var status = deleteConfirmationDialog.result;
+                if (status == SystemUiResult.ConfirmButtonSelection) {
+                    if (indexPath > fileModels.size()) return;
+                    var entry = fileModels.value( indexPath );
+                    if (entry.type == 'folder') {
+                        //TODO show message
+                    }
+                    else if (entry.type == 'file' ) {
+                        if ( writerApp.deleteFile(entry.path) )
+                            fileModels.removeAt(indexPath);
+                    }
+                }
+            }
         } // end of ListView
         
     } // end of Root Container
     actions: [
         ActionItem {
-            title: "Document"
+            title: "New Document"
             ActionBar.placement: ActionBarPlacement.OnBar
             imageSource: "asset:///images/ic_add_file.png"
             onTriggered: {
@@ -119,7 +219,7 @@ Page {
             }
         },
         ActionItem {
-            title: "Folder"
+            title: "New Folder"
             ActionBar.placement: ActionBarPlacement.OnBar
             imageSource: "asset:///images/ic_add_folder.png"
         }
@@ -211,4 +311,5 @@ Page {
         reloadDirectory();
         actionOpenFile( newFile, {focusTitle:true, clearTitle:true} );
     }
+
 } // end of Page

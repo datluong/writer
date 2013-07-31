@@ -1,5 +1,5 @@
 import bb.cascades 1.0
-
+import bb.system 1.0
 // creates one page with a label
 NavigationPane {
     id: rootNavigationPane
@@ -11,11 +11,15 @@ NavigationPane {
         ComponentDefinition {
             id: editorPageDef
             source: "Editor.qml"
+        },
+        SystemDialog {
+            id: deleteConfirmationDialog
+            title: "Delete"
+            body: "Delete the selected document?"
         }
     ]
     
-    function experimentZone() {
-//        rootNavigationPane.pus
+    function experimentZone() {        
     }
     
     onPopTransitionEnded: {
@@ -29,4 +33,4 @@ NavigationPane {
         page.destroy();
     }
 } // end of NavigationPane
-
+    
