@@ -17,25 +17,31 @@ Page {
             // title Container
             id: titleContainer
             implicitLayoutAnimationsEnabled: false
-            topPadding: 24
-            bottomPadding: 28
+            topPadding: 7
+            bottomPadding: 9
             horizontalAlignment: HorizontalAlignment.Fill
-            Label {
-               implicitLayoutAnimationsEnabled: false
-                visible: true
-                verticalAlignment: VerticalAlignment.Center
-                id: titleLabel
-                text: "WRITER"
-                textStyle.fontWeight: FontWeight.W600
-                horizontalAlignment: HorizontalAlignment.Center
-            }
+//            Label {
+//               implicitLayoutAnimationsEnabled: false
+//                visible: true
+//                verticalAlignment: VerticalAlignment.Center
+//                id: titleLabel
+//                text: "WRITER"
+//                textStyle.fontWeight: FontWeight.W600
+//                horizontalAlignment: HorizontalAlignment.Center
+//            }
             TextField {
-                implicitLayoutAnimationsEnabled: false
                 id: titleTextField
-                visible: false
+                enabled: true                
+                textStyle.fontWeight: FontWeight.W600
+                text: "WRITER"
+                implicitLayoutAnimationsEnabled: false
                 textStyle.textAlign: TextAlign.Center
+                clearButtonVisible: false
                 backgroundVisible: false
                 focusHighlightEnabled: false
+                onTextChanged: {
+                    actionUpdateFolderName();
+                }
             }
             
         } // end Title Container
@@ -210,18 +216,25 @@ Page {
             
             function actionDeleteListItem( indexPath) {
                 console.log('actionDeleteListItem:indexPath', indexPath );
-                deleteConfirmationDialog.body = 'Delete the selected document?';
+                if ( indexPath >= fileModels.size() ) return;
+                
+                var entry = fileModels.value(indexPath);
+                deleteConfirmationDialog.body = entry.type == 'file'? 'Delete the selected document?':'Delete the selected folder?';
                 deleteConfirmationDialog.exec();
                 var status = deleteConfirmationDialog.result;
                 if (status == SystemUiResult.ConfirmButtonSelection) {
-                    if (indexPath > fileModels.size()) return;
-                    var entry = fileModels.value( indexPath );
+                    if (indexPath > fileModels.size()) return;                
                     if (entry.type == 'folder') {
-                        //TODO show message
+                        if ( writerApp.deleteFolder(entry.path) ) {
+                            showMessageToast( "Folder is deleted");
+                            fileModels.removeAt(indexPath);
+                        }
                     }
                     else if (entry.type == 'file' ) {
-                        if ( writerApp.deleteFile(entry.path) )
+                        if ( writerApp.deleteFile(entry.path) ) {
+                            showMessageToast( "Document is deleted" );
                             fileModels.removeAt(indexPath);
+                        }
                     }
                 }
             }
@@ -243,26 +256,6 @@ Page {
             imageSource: "asset:///images/ic_add_folder.png"
             onTriggered: {
                 actionNewFolder();
-            }
-        },
-        ActionItem {
-            title: "Test Edit"
-            ActionBar.placement: ActionBarPlacement.OnBar
-            imageSource: "asset:///images/ic_rename.png"
-            onTriggered: {
-                if (titleLabel.visible) {
-                    // show editor
-                    titleLabel.visible = false;
-                    titleTextField.visible = true;
-                    titleContainer.topPadding = 6;
-                    titleContainer.bottomPadding = 10;
-                }
-                else {
-                    titleLabel.visible     = true; 
-                    titleTextField.visible = false;
-                    titleContainer.topPadding = 24;
-                    titleContainer.bottomPadding = 28;
-                }
             }
         }
     ]
@@ -296,7 +289,7 @@ Page {
         if (comps.length > 0) {
             var name = comps[ comps.length - 1 ];
             if (name.length > 0) {
-                titleLabel.text = name;
+                titleTextField.text = name;
             }
         }
     }
@@ -370,6 +363,10 @@ Page {
     function actionNewFolder() {
         var newFolder = writerApp.createEmptyFolder( documentPath );
         console.log('[DocumentBrowser]actionNewFolder', newFolder);
+        reloadDirectory();
+        
+        // open folder
+        actionOpenFolder( newFolder );
     }
     
     /**
@@ -385,6 +382,15 @@ Page {
         }
         reloadDirectory();
         actionOpenFile( newFile, {focusTitle:true, clearTitle:true} );
+    }
+
+    function actionUpdateFolderName() {
+        
+    }
+    
+    function showMessageToast( message ) {
+        mainMessageToast.body = message;
+        mainMessageToast.show();
     }
 
     /**

@@ -20,7 +20,11 @@ NavigationPane {
             id: deleteConfirmationDialog
             title: "Delete"
             body: "Delete the selected document?"
-        }
+        },
+        SystemToast {
+            id: mainMessageToast
+            body: ""
+        }  
     ]
     
     onCreationCompleted: {

@@ -36,6 +36,7 @@ public:
     Q_INVOKABLE QVariantMap createEmptyFolder( QString documentPath );
     Q_INVOKABLE QVariantMap createEmptyFile( QString documentPath );
     Q_INVOKABLE bool deleteFile(QString filePath);
+    Q_INVOKABLE bool deleteFolder(QString folderPath);
     Q_INVOKABLE QString relativePath(QString filePath);
 
 private:
@@ -45,6 +46,7 @@ private:
     QString untitledFilePath(const QString& path, int counter);
     QString untitledFolderPath(QString destPath, int counter);
     QString availableUntitledFilePath( const QString& path,  const QString& originalPath );
+    QString documentsFolderPath();
 
     void initializeDocumentFolder();
     void initializeAutosave();

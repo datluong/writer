@@ -21,6 +21,7 @@ namespace writely {
 WriterUI::WriterUI(bb::cascades::Application *app)
 : QObject(app)
 {
+
 	// filesystem initialization
 	initializeDocumentFolder();
 
@@ -223,6 +224,44 @@ bool WriterUI::deleteFile(QString filePath) {
 	if (!file.exists()) return false;
 
 	return file.remove();
+}
+
+/**
+ * Recursive delete every files and subfolder in given folder, then delete the target folder
+ * @param    folderPath   The full path of the folder to be deleted
+ */
+bool WriterUI::deleteFolder(QString folderPath) {
+	qDebug() << "WriterUI::deleteFolder" << folderPath;
+	// make sure the folder is a subfolder of ./documents folder
+	if (folderPath.indexOf( documentsFolderPath() ) != 0) {
+		qDebug() << "WriterUI::deleteFolder can't executed, folderPath is invalid";
+		return false;
+	}
+
+	QDir theFolder(folderPath);
+	if (!theFolder.exists()) return false;
+
+	QList<QFileInfo> infoList = theFolder.entryInfoList();
+	foreach (QFileInfo fileInfo, infoList) {
+		if (fileInfo.fileName() == "." || fileInfo.fileName() == ".." ) continue;
+		qDebug() << "deleting.." << fileInfo.fileName();
+		if (fileInfo.isFile()) {
+			bool status = QFile::remove(fileInfo.filePath());
+			qDebug() << " -> delete status:" << status << ":" << fileInfo.filePath();
+			if ( !status ) return false;
+		}
+		else if (fileInfo.isDir()) {
+			bool status = this->deleteFolder(fileInfo.filePath());
+			if ( !status ) return false;
+			qDebug() << " -> delete status:" << status << ":" << fileInfo.filePath();
+		}
+	}
+
+	return theFolder.rmdir(folderPath);
+}
+
+QString WriterUI::documentsFolderPath() {
+	return QDir::homePath() + "/documents";
 }
 
 bool WriterUI::isFileLoadable(QString filePath) {

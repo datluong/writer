@@ -26,7 +26,7 @@ Page {
                     bottomPadding: 24
                     TextArea {
                         id: titleTextArea
-                        hintText: "Untitled"
+                        hintText: "Title"
                         topPadding: 0
                         bottomPadding: 0
                         text: ""
@@ -62,12 +62,12 @@ Page {
                         backgroundVisible: false
                         focusHighlightEnabled: false
                         textFormat: TextFormat.Plain
-                        textStyle.fontWeight: FontWeight.W200
+                        textStyle.fontWeight: FontWeight.W400
                         textStyle.fontSize: FontSize.PointValue
                         // fontSize 7 is small but readable. Recommended size is 7.5  
-                        textStyle.fontSizeValue: 7.5
+                        textStyle.fontSizeValue: 7
                         scrollMode: TextAreaScrollMode.Elastic
-                        hintText: ''
+                        hintText: 'Content'
                         minHeight: 480
                         text: ""
                         implicitLayoutAnimationsEnabled: false
@@ -104,7 +104,7 @@ Page {
                 Label {
                     id: wordCountLabel
                     text: "0 word"
-                    textStyle.fontWeight: FontWeight.W400
+                    textStyle.fontWeight: FontWeight.W200
                     textStyle.fontSize: FontSize.PointValue
                     textStyle.fontSizeValue: 7
                     textStyle.color: Color.White
