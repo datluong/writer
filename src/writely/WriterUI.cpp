@@ -5,6 +5,8 @@
 #include <bb/cascades/QmlDocument>
 #include <bb/cascades/AbstractPane>
 
+#include <bb/device/HardwareInfo>
+
 #include <QDir>
 #include <QFileInfoList>
 #include <QFileInfo>
@@ -64,21 +66,21 @@ void WriterUI::initializeAutosave() {
  * @param    documentPath    start with "/"
  */
 QVariantMap WriterUI::createEmptyFolder( QString documentPath ) {
-	QString destPath = QDir::homePath() + "/documents" + documentPath;
+	QString destPath = documentsFolderPath() + documentPath;
 	qDebug() << "WriterUI::createEmptyFolder" << ":documentPath:" << documentPath << "destPath:" << destPath;
 	QDir dir(destPath);
 	if (!dir.exists()) return QVariantMap();
 
 	int counter = 0;
 	while (true) {
-		QString folderName = untitledFolderPath(destPath, counter);
+		QString folderName = genFolderPath(destPath, counter);
 		QDir newFolder(folderName);
 		if (!newFolder.exists())
 			break;
 		counter ++;
 	}
 
-	QString newFolderName =  untitledFolderPath(destPath, counter);
+	QString newFolderName =  genFolderPath(destPath, counter);
 	QDir newFolder( newFolderName );
 
 	if (!newFolder.mkdir( newFolderName ))
@@ -91,6 +93,47 @@ QVariantMap WriterUI::createEmptyFolder( QString documentPath ) {
 	entry["path"] = folderInfo.filePath();
 	qDebug() << "Created New Folder:" << entry;
 	return entry;
+}
+
+/**
+ * Rename an folder and return the folder info.
+ * An empty QVariant is returned if there's an error
+ */
+QVariantMap WriterUI::renameFolder( QString relativeFolderPath, QString newName ) {
+	QString destPath = documentsFolderPath() + relativeFolderPath;
+	qDebug() << "WriterUI::renameFolder" << destPath << " -> " << newName;
+	QFileInfo folderInfo(destPath);
+	QDir folder(destPath);
+	if (!folder.exists()) return QVariantMap();
+	QDir parentFolder(destPath);
+	parentFolder.cdUp();
+	qDebug() << "parentFolder" << parentFolder.path();
+
+	int counter = 0;
+	while (true) {
+		QString folderName = genFolderPath(parentFolder.path(), counter, newName);
+		QDir newFolder(folderName);
+		if (!newFolder.exists())
+			break;
+		counter ++;
+	}
+	QString newFolderName = genFolderPath(parentFolder.path(), counter, newName);
+	if ( !folder.rename( destPath, newFolderName ) )
+		return QVariantMap();
+
+	QFileInfo info(newFolderName);
+	if ( !info.exists() )
+		return QVariantMap();
+
+	QVariantMap entry;
+	entry["type"] = "folder";
+	entry["name"] = info.baseName();
+	entry["path"] = info.filePath();
+	entry["relativePath"] = relativePath( info.filePath() );
+
+	qDebug() << "WriterUI::renameFolder:reesult:" << entry;
+	return entry;
+
 }
 
 /**
@@ -130,8 +173,11 @@ QVariantMap WriterUI::createEmptyFile( QString documentPath ) {
 	return entry;
 }
 
-QString WriterUI::untitledFolderPath(QString path, int counter) {
-	QString folderName = path + "/Untitled Folder";
+/**
+ * return fullPath
+ */
+QString WriterUI::genFolderPath(QString path, int counter, QString defaultName ) {
+	QString folderName = path + "/" + defaultName;
 	if (counter > 0)
 		folderName += QString(" %1").arg(counter);
 	return folderName;
@@ -391,6 +437,11 @@ Page* WriterUI::currentEditorPage() {
 		}
 	}
 	return NULL;
+}
+
+bool WriterUI::isPhysicalKeyboardDevice() {
+	bb::device::HardwareInfo hwInfo;
+	return hwInfo.isPhysicalKeyboardDevice();
 }
 
 void WriterUI::onAppAboutToQuit() {

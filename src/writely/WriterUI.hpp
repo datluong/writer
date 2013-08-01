@@ -37,14 +37,17 @@ public:
     Q_INVOKABLE QVariantMap createEmptyFile( QString documentPath );
     Q_INVOKABLE bool deleteFile(QString filePath);
     Q_INVOKABLE bool deleteFolder(QString folderPath);
+    Q_INVOKABLE QVariantMap renameFolder( QString relativeFolderPath, QString newName );
     Q_INVOKABLE QString relativePath(QString filePath);
-
+    Q_INVOKABLE bool isPhysicalKeyboardDevice();
+    Q_INVOKABLE QString correctFileName(const QString& fileName);
 private:
     NavigationPane* mRootNavigationPane;
 
-    QString correctFileName(const QString& fileName);
     QString untitledFilePath(const QString& path, int counter);
-    QString untitledFolderPath(QString destPath, int counter);
+    QString genFolderPath(QString path, int counter, QString defaultName = QString("Untitled Folder") );
+
+
     QString availableUntitledFilePath( const QString& path,  const QString& originalPath );
     QString documentsFolderPath();
 

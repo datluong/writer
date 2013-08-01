@@ -44,7 +44,17 @@ NavigationPane {
         }
     }
     onPopTransitionEnded: {
-        console.log( '[main]OnPopTransitionEnded', page );        
+        console.log( '[main]OnPopTransitionEnded', page );
+//        if (rootNavigationPane.count() > 0) {
+//            var topPage = rootNavigationPane.at( rootNavigationPane.count() - 1);
+//            if (topPage.hasOwnProperty('glMetaData')) {
+//                var meta = topPage.glMetaData();
+//                if (meta.pageType == 'documentBrowser') {
+//                    topPage.reloadDirectory();
+//                }
+//            }
+//        }
+        
         if ( page.hasOwnProperty('glMetaData') )  {
             var meta = page.glMetaData();
             if (meta.pageType == 'editor') {

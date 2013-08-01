@@ -7,6 +7,9 @@ Page {
     // the path for browsing. Path must start with '/', with root path is '/'
     // format: /[..]/[..]
     property string documentPath: '/';
+    property bool   documentBrowserInitialized: false;
+    
+    signal folderNameChanged();
     
     Container {
         layout: StackLayout {}
@@ -29,9 +32,10 @@ Page {
 //                textStyle.fontWeight: FontWeight.W600
 //                horizontalAlignment: HorizontalAlignment.Center
 //            }
+
             TextField {
                 id: titleTextField
-                enabled: true                
+                enabled: false            
                 textStyle.fontWeight: FontWeight.W600
                 text: "WRITER"
                 implicitLayoutAnimationsEnabled: false
@@ -40,10 +44,14 @@ Page {
                 backgroundVisible: false
                 focusHighlightEnabled: false
                 onTextChanged: {
-                    actionUpdateFolderName();
+                    if (documentBrowserInitialized)
+                        actionUpdateFolderName();
                 }
             }
-            
+            TextField {
+                // this dummy textfield will make titleTextField loses focus on ENTER key 
+                visible: false
+            }
         } // end Title Container
         Container {
             //seperator
@@ -178,7 +186,7 @@ Page {
                     actionOpenFile( entry, {focusEditor:true} );                    
                 }
                 else if (entry.type == 'folder' ) {
-                    actionOpenFolder( entry );
+                    actionOpenFolder( entry, {} );
                 }
             }
 
@@ -284,6 +292,9 @@ Page {
         updateTitle();
     }
     
+    /**
+     * Bind documentPath to title field
+     **/
     function updateTitle() {
         var comps = documentPath.split('/');
         if (comps.length > 0) {
@@ -294,9 +305,12 @@ Page {
         }
     }
 
-    function actionOpenFolder( folderInfo ) {
+    function actionOpenFolder( folderInfo, options ) {
         if ( folderInfo.type != 'folder' )
             return;
+        if (options === null || options === undefined)
+            options = {};
+            
         console.log('[DocumentBrowser]actionOpenFolder:',folderInfo.path);
         var relativePath = writerApp.relativePath( folderInfo.path );
         console.log('[DocumentBrowser]relativePath',relativePath);
@@ -304,8 +318,24 @@ Page {
         var newBrowser = documentBrowserPageDef.createObject();
         newBrowser.documentPath = relativePath;
         newBrowser.reloadDirectory();
-
+        newBrowser.enableTitleEditing();
+        
+        newBrowser.folderNameChanged.connect(onSubfolderNameChanged);
         rootNavigationPane.push(newBrowser);
+        newBrowser.documentBrowserInitialized = true;
+        
+        if (options.editFolderName == true) {
+            newBrowser.beginEditFolder();
+        }
+    }
+    
+    function enableTitleEditing() {
+        titleTextField.enabled = true;
+    }
+    
+    function beginEditFolder() {
+        titleTextField.editor.setSelection( 0, titleTextField.text.length );
+        titleTextField.requestFocus();
     }
     
     /**
@@ -356,6 +386,10 @@ Page {
         console.log('onDocumentTitleUpdated', newTitle);
         reloadDirectory();
     }
+
+    function onSubfolderNameChanged() {
+        reloadDirectory();
+    }
     
     /**
      * Create a new untitled folder
@@ -366,7 +400,7 @@ Page {
         reloadDirectory();
         
         // open folder
-        actionOpenFolder( newFolder );
+        actionOpenFolder( newFolder, {editFolderName:true} );
     }
     
     /**
@@ -384,8 +418,29 @@ Page {
         actionOpenFile( newFile, {focusTitle:true, clearTitle:true} );
     }
 
+    /**
+     * {event_handler}
+     * Fired when the titlebar's text is changed
+     */
     function actionUpdateFolderName() {
-        
+        if (documentPath === '' || documentPath == '/') return;
+        var newName = writerApp.correctFileName( titleTextField.text.trim() );
+        if (newName.length === 0) {
+            updateTitle();
+            return;
+        } else {
+            var entry = writerApp.renameFolder( documentPath, newName );
+            if (entry.hasOwnProperty('name')) {
+                documentPath = entry.relativePath;
+                updateTitle();
+                folderNameChanged();
+            }
+            else {
+                //fail
+                updateTitle();
+                return;
+            }
+        }
     }
     
     function showMessageToast( message ) {
