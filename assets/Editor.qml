@@ -1,4 +1,5 @@
 import bb.cascades 1.0
+import QtQuick 1.0
 
 Page {
     id: editorPage
@@ -8,6 +9,8 @@ Page {
     property string documentTitle: '';
     property string documentPath: '';
     property bool   documentChanged: false;
+    property bool   compactWordCountView: false;
+    
     signal documentTitleUpdated(string newTitle);
     
     Container {
@@ -56,7 +59,6 @@ Page {
                     leftPadding: 24
                     rightPadding: 24
                     TextArea {
-                        
                         id: editorTextArea
                         topPadding: 0
                         backgroundVisible: false
@@ -78,9 +80,14 @@ Page {
                         onFocusedChanged: {
                             if (focused)
                                 textFieldGotFocus();
-                        }
-                        
+                        }                        
                     }
+                }
+                Container {
+                    // padding Container
+                    horizontalAlignment: HorizontalAlignment.Fill
+                    background: Color.Transparent
+                    preferredHeight: 44
                 }
             } // end Editor Container
         } // end ScrollView
@@ -88,7 +95,7 @@ Page {
             id: controllerContainer
             
             preferredHeight: 52
-            rightPadding: 30
+            rightPadding: 8
             
             horizontalAlignment: HorizontalAlignment.Right
             verticalAlignment: VerticalAlignment.Bottom
@@ -110,6 +117,7 @@ Page {
                     textStyle.color: Color.White
                 }
                 ImageView {
+                    id: wordCountIcon                    
                     imageSource: "asset:///images/dots.png"
                     verticalAlignment: VerticalAlignment.Center
                 }
@@ -127,8 +135,8 @@ Page {
         } // end Controller Container
     } // end Root Container 
     
-    function updateWordCount(count) {
-        var t = '' + count + (count < 2 ? ' word' : ' words');
+    function updateWordCount(count) {        
+        var t = '' + count + ( compactWordCountView? ' w' : (count < 2 ? ' word' : ' words'));
         wordCountLabel.setText( t );        
     }
     
@@ -141,6 +149,12 @@ Page {
     }
     
     onCreationCompleted: {
+//        compactWordCountView = writerApp.isPhysicalKeyboardDevice();
+        if (compactWordCountView) {
+//            wordCountIcon.visible = false;
+//            controllerContainer.rightPadding = 6;
+        }
+        
         updateWordCount( wordCount(editorTextArea.text) );
     }
     
@@ -222,4 +236,6 @@ Page {
     function clearTitle() {
         titleTextArea.resetText();
     }
+    
+    
 } // end Page
