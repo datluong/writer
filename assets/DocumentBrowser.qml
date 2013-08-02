@@ -59,6 +59,20 @@ Page {
             horizontalAlignment: HorizontalAlignment.Fill
             preferredHeight: 2
         }
+        //
+
+        Container {
+            id: folderEmptyContainer
+            visible: false            
+            horizontalAlignment: HorizontalAlignment.Fill
+            topPadding: 32
+            Label {
+                text: "No documents"
+                horizontalAlignment: HorizontalAlignment.Center
+                textStyle.fontWeight: FontWeight.W200
+            }
+        }
+        // listview
         ListView {
             id: documentListView
             dataModel: fileModels                   
@@ -220,6 +234,7 @@ Page {
                         }    
                     }
                 }
+                updateFolderEmptyIndicator();
             }
             
             function actionDeleteListItem( indexPath) {
@@ -245,8 +260,10 @@ Page {
                         }
                     }
                 }
+                updateFolderEmptyIndicator();
             }
         } // end of ListView
+
         
     } // end of Root Container
     actions: [
@@ -290,6 +307,8 @@ Page {
         var itemData = writerApp.listDirectory(documentPath);
         fileModels.append(itemData);
         updateTitle();
+        
+        updateFolderEmptyIndicator();
     }
     
     /**
@@ -442,6 +461,24 @@ Page {
             }
         }
     }
+
+    function updateFolderEmptyIndicator() {
+        if (fileModels.size() === 0) {
+            documentListView.visible = false;
+            folderEmptyContainer.visible = true;
+        } else {
+            documentListView.visible = true;
+            folderEmptyContainer.visible = false;
+        }
+    }
+
+//    /**
+//     * This handler is invoked when the Document Browser is pushed onto the stack
+//     * when the push animation is ended 
+//     */ 
+//    function handlePushEndedEvent() {
+//        updateFolderEmptyIndicator();    
+//    }
     
     function showMessageToast( message ) {
         mainMessageToast.body = message;

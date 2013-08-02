@@ -39,7 +39,7 @@ NavigationPane {
         if (page.hasOwnProperty('glMetaData')) {
             var meta = page.glMetaData();
             if (meta.pageType == 'documentBrowser') {
-                console.log('browserPushed.');
+//                page.handlePushEndedEvent();
             }
         }
     }
