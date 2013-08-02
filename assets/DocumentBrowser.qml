@@ -1,6 +1,8 @@
 import bb.cascades 1.0
 import bb.system 1.0
 
+import 'wordcounter.js' as WordCounter
+
 Page {
     id: documentBrowserPage
     
@@ -116,7 +118,9 @@ Page {
                         }
                         contextActions: [                            
                             ActionSet {
+                                id: documentActionSet
                                 title: ListItemData.name
+                                subtitle: ( ListItemData.type == 'folder' ? 'Folder' : '');
                                 ActionItem {
                                     title: "Sample Action"   
                                 }
@@ -135,7 +139,7 @@ Page {
                         ListItem.onActivationChanged: {
                             var activeChangable = active;
                             var selection = ListItem.view.selectionList();
-                            console.log('ListItem.onActivationChanged', active,'indexPath:', ListItem.indexPath, selection.length, 'selections:', selection, 'indexOf', selection.indexOf(ListItem.indexPath), 'selectType',typeof(selection));
+                            console.log('ListItem.onActivationChanged', active,'indexPath:', ListItem.indexPath, 'selectionLength:',selection.length, 'selections:', selection, 'indexOf', selection.indexOf(ListItem.indexPath), 'selectType',typeof(selection));
                             
                             if (selection.length > 0) {
                                 for (var i = 0; i < selection.length; i++) {
@@ -144,6 +148,16 @@ Page {
                                         console.log('switch active -> true since the row is selected');
                                         activeChangable = true;
                                     }
+                                }
+                            }
+                            else {
+                                // single selection
+                                if (ListItemData.type == 'file' ) {
+                                    // count the number of word
+                                    var content = ListItem.view.loadFileContent_( ListItemData.path );
+//                                    var content = writerApp.loadFileContent( ListItemData.path );
+                                    var wc = WordCounter.wordCount( content );
+                                    documentActionSet.subtitle = '' + wc + (wc <= 1 ? ' word' : ' words');
                                 }
                             }
                             listItemContainer.background = activeChangable ? Color.create('#ebebeb') : Color.Transparent;
@@ -261,6 +275,13 @@ Page {
                     }
                 }
                 updateFolderEmptyIndicator();
+            }
+            
+            /**
+             * Wrapper method
+             */
+            function loadFileContent_(path) {
+                return writerApp.loadFileContent(path);
             }
         } // end of ListView
 
