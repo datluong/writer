@@ -26,6 +26,7 @@ WriterUI::WriterUI(bb::cascades::Application *app)
 
 	// filesystem initialization
 	initializeDocumentFolder();
+	qmlRegisterType<QTimer>("my.timer", 1, 0, "QTimer");
 
     // create scene document from main.qml asset
     // set parent to created document to ensure it exists for the whole application lifetime
@@ -40,6 +41,8 @@ WriterUI::WriterUI(bb::cascades::Application *app)
     qDebug() << "rootPane" << (mRootNavigationPane!=NULL);
 
     connect( app, SIGNAL(aboutToQuit()), this, SLOT(onAppAboutToQuit()) );
+    connect( app, SIGNAL(thumbnail()),   this, SLOT(onAppThumbnailed()) );
+    connect( app, SIGNAL(fullscreen()),  this, SLOT(onAppFullscreen()) );
 
     initializeAutosave();
 }
@@ -446,18 +449,26 @@ bool WriterUI::isPhysicalKeyboardDevice() {
 
 void WriterUI::onAppAboutToQuit() {
 	qDebug() << "WriterUI::onAppAboutToQuit()";
-//	qDebug() << "Pages Count:" << mRootNavigationPane->count();
-//	if (mRootNavigationPane->count() > 0) {
-//		Page* page = mRootNavigationPane->at( mRootNavigationPane->count()-1 );
-//		if (page) {
-//			if ( page->objectName() == "editorPage" ) {
-//				QMetaObject::invokeMethod(page, "handleAppExitEvent" );
-//			}
-//		}
-//	}
 	Page* page = currentEditorPage();
 	if (page)
 		QMetaObject::invokeMethod(page, "handleAppExitEvent" );
+}
+
+//connect( app, SIGNAL(thumbnail()),   this, SLOT(onAppThumbnailed()) );
+//connect( app, SIGNAL(fullscreen()),  this, SLOT(onAppFullscreen()) );
+
+void WriterUI::onAppThumbnailed() {
+	qDebug() << "WriterUI::onAppThumbnailed()";
+	Page* page = currentEditorPage();
+	if (page)
+		QMetaObject::invokeMethod(page, "onThumbnailed" );
+}
+
+void WriterUI::onAppFullscreen() {
+	qDebug() << "WriterUI::onAppFullscreen";
+	Page* page = currentEditorPage();
+	if (page)
+		QMetaObject::invokeMethod(page, "onFullscreen" );
 }
 
 /**
@@ -468,5 +479,6 @@ void WriterUI::onAutosaveTimerTimeout() {
 	if (page)
 		QMetaObject::invokeMethod(page, "handleAutoSaveEvent" );
 }
+
 
 } // end namespace

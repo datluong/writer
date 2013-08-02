@@ -1,15 +1,21 @@
 import bb.cascades 1.0
-import QtQuick 1.0
+import my.timer 1.0
 
 Page {
     id: editorPage
     objectName: "editorPage"
     actionBarAutoHideBehavior: ActionBarAutoHideBehavior.Disabled
     actionBarVisibility: ChromeVisibility.Hidden
+    
     property string documentTitle: '';
     property string documentPath: '';
+    property bool   readyForEditing: false;
     property bool   documentChanged: false;
     property bool   compactWordCountView: false;
+    property bool   wordCountBarHidden: false;
+    property bool   timerActive: false;
+    property double lastStrokeTime: 0;
+    property double wordCountBarIdleTime: 2500;
     
     signal documentTitleUpdated(string newTitle);
     
@@ -44,7 +50,6 @@ Page {
                         onTextChanging: {
                             documentChanged = true;
                             if (text.length > 0 && text.indexOf("\n") == text.length-1) {
-                                console.log('enter key detected');
                                 // remove the enterKey
                                 titleTextArea.text = text.substring(0, text.length-1) ;                               
                                 focusEditor();
@@ -76,6 +81,10 @@ Page {
                         onTextChanging: {          
                             documentChanged = true;
                             updateWordCount(wordCount(text));
+                            
+                            if (compactWordCountView && readyForEditing) {
+                                hideWordCountBar();
+                            }
                         }
                         onFocusedChanged: {
                             if (focused)
@@ -92,7 +101,7 @@ Page {
             } // end Editor Container
         } // end ScrollView
         Container {
-            id: controllerContainer
+            id: wordCountBar
             
             preferredHeight: 52
             rightPadding: 8
@@ -133,10 +142,21 @@ Page {
                 }
             }
         } // end Controller Container
-    } // end Root Container 
+    } // end Root Container
+    
+    attachedObjects: [
+        QTimer {
+            id: editorTimer
+            singleShot: false
+            interval: 1000            
+            onTimeout: {
+                updateWordCountBarVisibility();
+            }
+        }
+    ]
     
     function updateWordCount(count) {        
-        var t = '' + count + ( compactWordCountView? ' w' : (count < 2 ? ' word' : ' words'));
+        var t = '' + count + (count < 2 ? ' word' : ' words');
         wordCountLabel.setText( t );        
     }
     
@@ -149,14 +169,57 @@ Page {
     }
     
     onCreationCompleted: {
-//        compactWordCountView = writerApp.isPhysicalKeyboardDevice();
+        compactWordCountView = writerApp.isPhysicalKeyboardDevice();
         if (compactWordCountView) {
-//            wordCountIcon.visible = false;
-//            controllerContainer.rightPadding = 6;
+            editorTimer.start();
+            timerActive = true;
         }
         
-        updateWordCount( wordCount(editorTextArea.text) );
+        updateWordCount( wordCount(editorTextArea.text) );                
     }
+    
+    ///////////////////////////////////////////////////////////////////////////
+    // Q10/Q5 WordCountBar visibility handling
+     function onFullscreen() {
+        if (compactWordCountView && timerActive === false) {
+            timerActive = true;
+            editorTimer.start();
+            console.log('editorTimer is started');
+        }        
+    }
+
+    function onThumbnailed() {
+        if (compactWordCountView && timerActive) {
+            timerActive = false;
+            editorTimer.stop();
+            console.log('editorTimer is stopped');
+        }
+    }
+    
+    function hideWordCountBar() {
+        var now = new Date();
+        lastStrokeTime = now.getTime();
+        if (wordCountBarHidden) return;
+        
+        wordCountBarHidden = true;
+        wordCountBar.opacity = 0;         
+    }
+    
+    function updateWordCountBarVisibility() {
+        if (wordCountBarHidden === false) return;
+        
+        var now = (new Date()).getTime();
+        if (now > lastStrokeTime + wordCountBarIdleTime) {
+            // show wordCountBar
+            wordCountBarHidden = false;
+            wordCountBar.opacity = 1;
+        }
+        else if (now < lastStrokeTime) {
+            lastStrokeTime = now;
+        }
+            
+    } 
+    ///////////////////////////////////////////////////////////////////////////
     
     function textFieldGotFocus() {
         if (editorPage.actionBarVisibility != ChromeVisibility.Hidden)
@@ -187,6 +250,7 @@ Page {
     
     function beginEditing() {
         documentChanged = false;
+        readyForEditing = true;
     }
     /**
      * Save document

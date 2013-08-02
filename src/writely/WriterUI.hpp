@@ -59,6 +59,8 @@ private:
 private slots:
 	void onAppAboutToQuit();
 	void onAutosaveTimerTimeout();
+	void onAppThumbnailed();
+	void onAppFullscreen();
 
 };
 
