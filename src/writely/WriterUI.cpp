@@ -5,8 +5,19 @@
 #include <bb/cascades/QmlDocument>
 #include <bb/cascades/AbstractPane>
 #include <bb/cascades/OrientationSupport>
+#include <bb/cascades/Sheet>
+#include <bb/cascades/ArrayDataModel>
+#include <bb/PpsObject>
+
 #include <bb/device/HardwareInfo>
 #include <bb/device/DisplayInfo>
+
+#include <bb/system/InvokeManager>
+#include <bb/system/InvokeRequest>
+#include <bb/system/InvokeQueryTargetsRequest>
+#include <bb/system/InvokeQueryTargetsReply>
+#include <bb/system/InvokeReplyError>
+#include <bb/system/SystemDialog>
 
 #include <QDir>
 #include <QFileInfoList>
@@ -16,14 +27,17 @@
 #include <QMetaMethod>
 #include <QTimer>
 
-
 using namespace bb::cascades;
+using namespace bb::system;
 
 namespace writely {
 
 WriterUI::WriterUI(bb::cascades::Application *app)
 : QObject(app)
 {
+	// private vars initialization
+	mEmbeddedData = QVariantMap();
+	_queryResults = NULL;
 
 	// filesystem initialization
 	initializeDocumentFolder();
@@ -416,6 +430,140 @@ QString WriterUI::correctFileName(const QString& fileName) {
 	name = name.replace( "\n", "");
 	return name.trimmed();
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// SHARING SUPPORT
+///////////////////////////////////////////////////////////////////////////////
+
+void WriterUI::actionShareDocument(QString title, QString body) {
+
+	/**
+	// Working code for Invoking Remember with title and content
+	InvokeManager invokeManager;
+	InvokeRequest request;
+
+	request.setAction( "bb.action.ADD" );
+	request.setTarget( "sys.pim.remember.composer" );
+
+	QUrl uri( "remember://notebookentry?title=TheTitle&description=thedescsdderewrww" );
+	request.setUri( QString(uri.toEncoded()) );
+
+
+	invokeManager.invoke( request );
+	return
+	**/;
+
+	qDebug() << "WriterUI::actionShareDocument";
+	InvokeManager invokeManager;
+	InvokeQueryTargetsRequest request;
+
+	request.setAction( "bb.action.SHARE" );
+	request.setMimeType( "text/plain" );
+
+	mEmbeddedData["shareTitle"] = title;
+	mEmbeddedData["shareBody"]  = body;
+
+	InvokeQueryTargetsReply* results = invokeManager.queryTargets(request);
+	if (!results) {
+		qWarning() << "Can't query MIME type";
+	}
+	else {
+		results->setParent(this);
+		connect(results, SIGNAL(finished()), this, SLOT(onTextQueryResponse()));
+		_queryResults = results;
+	}
+}
+
+void WriterUI::onTextQueryResponse() {
+	qDebug() << "WriterUI::onTextQueryResponse()";
+
+	if (_queryResults == NULL) return;
+	if (_queryResults->error() != InvokeReplyError::None) {
+		qDebug() << "InvokeReplyError:" << _queryResults->error();
+		return;
+	}
+
+	if (_queryResults->actions().size() == 0) return;
+	InvokeAction action = _queryResults->actions().first();
+	if (action.targets().size() == 0) return;
+
+	// load the sheet
+	QmlDocument* qml = QmlDocument::create("asset:///ShareTargetPickerSheet.qml");
+	Sheet* sheet     = qml->createRootObject<Sheet>();
+	ArrayDataModel* dataModel = sheet->findChild<ArrayDataModel*>("shareModels");
+	qDebug() << "dataModel" << (dataModel!=NULL?true:false);
+	if (dataModel) {
+		foreach (InvokeTarget target, action.targets()) {
+			QVariantMap map;
+			map["title"]       = target.label();
+			map["imageSource"] = QUrl( QString("file://") + target.icon().toString() );
+			map["target"]      = target.name();
+			map["action"]      = action.name();
+			dataModel->append(map);
+		}
+	}
+	connect( sheet, SIGNAL(shareTargetPicked(QVariant)), this, SLOT(onTextShareTargetPicked(QVariant)) );
+	sheet->open();
+
+	delete _queryResults;
+	_queryResults = NULL;
+};
+
+
+void WriterUI::onTextShareTargetPicked(QVariant target) {
+	qDebug() << "WriterUI::onTextShareTargetPicked:" << target;
+	if (!target.canConvert(QVariant::Map)) return;
+	if (!mEmbeddedData.contains("shareBody")) return;
+
+	QVariantMap map = target.toMap();
+	if (!map.contains("target")) return;
+	QString targetName	 = map["target"].toString();
+
+	InvokeManager invokeManager;
+	InvokeRequest request;
+
+	if (targetName == "sys.pim.remember.composer") {
+		// custom code for sharing title to remember
+		request.setAction( "bb.action.ADD" );
+		request.setTarget( "sys.pim.remember.composer" );
+
+		QUrl uri( "remember://notebookentry" );
+		uri.addEncodedQueryItem( QString("title").toAscii(), QUrl::toPercentEncoding( mEmbeddedData["shareTitle"].toString() ) );
+		uri.addEncodedQueryItem( QString("description").toAscii(), QUrl::toPercentEncoding( mEmbeddedData["shareBody"].toString() ) );
+		request.setUri( uri );
+
+		invokeManager.invoke( request );
+		return;
+	}
+
+	if (targetName == "sys.pim.uib.email.hybridcomposer" ) {
+		request.setTarget( "sys.pim.uib.email.hybridcomposer" );
+		request.setAction( "bb.action.COMPOSE" );
+		request.setMimeType( "message/rfc822" );
+
+		// prepare body
+		QVariantMap map;
+		map["subject"] = mEmbeddedData["shareTitle"].toString();
+		map["body"]    = mEmbeddedData["shareBody"].toString();
+
+		QVariantMap moreData;
+		moreData["data"] = map;
+		bool ok=true;
+		request.setData( bb::PpsObject::encode(moreData, &ok) );
+
+		invokeManager.invoke(request);
+		return;
+	}
+
+	request.setAction( map["action"].toString() );
+	request.setTarget( map["target"].toString() );
+	request.setData( mEmbeddedData["shareBody"].toString().toUtf8() );
+	request.setMimeType( "text/plain" );
+
+	invokeManager.invoke( request );
+}
+
+// End of Sharing Section /////////////////////////////////////////////////////
 
 void dumpMetaObject(const QMetaObject* metaObject) {
 	qDebug() << "dumpMetaObject" << metaObject;

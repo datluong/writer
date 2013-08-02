@@ -9,7 +9,10 @@
 #include <bb/cascades/NavigationPane>
 #include <bb/cascades/Page>
 
+#include <bb/system/InvokeQueryTargetsReply>
+
 using namespace bb::cascades;
+using namespace bb::system;
 
 namespace bb { namespace cascades { class Application; }}
 
@@ -44,8 +47,13 @@ public:
     Q_INVOKABLE QString correctFileName(const QString& fileName);
 
     Q_INVOKABLE bool determineVirtualKeyboardShown(int screenWidth, int screenHeight);
+
+    Q_INVOKABLE void actionShareDocument(QString title, QString body);
+
 private:
     NavigationPane* mRootNavigationPane;
+    QVariantMap mEmbeddedData;
+    InvokeQueryTargetsReply * _queryResults;
 
     QString untitledFilePath(const QString& path, int counter);
     QString genFolderPath(QString path, int counter, QString defaultName = QString("Untitled Folder") );
@@ -65,6 +73,9 @@ private slots:
 	void onAppThumbnailed();
 	void onAppFullscreen();
 
+	// sharing slots
+	void onTextQueryResponse();
+	void onTextShareTargetPicked(QVariant target);
 };
 
 }

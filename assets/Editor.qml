@@ -167,6 +167,17 @@ Page {
         }
     ]
     
+    actions: [
+        ActionItem {
+            title: "Share"
+            ActionBar.placement: ActionBarPlacement.OnBar
+            imageSource: "asset:///images/ic_share.png"
+            onTriggered: {
+                writerApp.actionShareDocument( titleTextArea.text, editorTextArea.text );
+            }
+        }
+    ]
+    
     function updateWordCount(count) {        
         var t = '' + count + (count < 2 ? ' word' : ' words');
         wordCountLabel.setText( t );        
