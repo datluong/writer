@@ -7,17 +7,19 @@
 #include <bb/cascades/OrientationSupport>
 #include <bb/cascades/Sheet>
 #include <bb/cascades/ArrayDataModel>
-#include <bb/PpsObject>
+#include <bb/cascades/pickers/FilePicker>
 
 #include <bb/device/HardwareInfo>
 #include <bb/device/DisplayInfo>
 
+#include <bb/PpsObject>
 #include <bb/system/InvokeManager>
 #include <bb/system/InvokeRequest>
 #include <bb/system/InvokeQueryTargetsRequest>
 #include <bb/system/InvokeQueryTargetsReply>
 #include <bb/system/InvokeReplyError>
 #include <bb/system/SystemDialog>
+
 
 #include <QDir>
 #include <QFileInfoList>
@@ -29,6 +31,7 @@
 
 using namespace bb::cascades;
 using namespace bb::system;
+using namespace bb::cascades::pickers;
 
 namespace writely {
 
@@ -38,6 +41,7 @@ WriterUI::WriterUI(bb::cascades::Application *app)
 	// private vars initialization
 	mEmbeddedData = QVariantMap();
 	_queryResults = NULL;
+	mToast        = NULL;
 
 	// filesystem initialization
 	initializeDocumentFolder();
@@ -435,24 +439,132 @@ QString WriterUI::correctFileName(const QString& fileName) {
 // SHARING SUPPORT
 ///////////////////////////////////////////////////////////////////////////////
 
-void WriterUI::actionShareDocument(QString title, QString body) {
+void WriterUI::actionShareDocumentAsAttachment(QString title, QString body) {
+	InvokeManager invokeManager;
+	InvokeQueryTargetsRequest request;
 
-	/**
-	// Working code for Invoking Remember with title and content
+	mEmbeddedData["shareTitle"] = title;
+	mEmbeddedData["shareBody"]  = body;
+
+	request.setAction( "bb.action.SHARE" );
+	request.setMimeType( "*" );
+	request.setUri( QUrl("file://" + QDir::currentPath() + "/shared/documents/sample.txt") );
+	InvokeQueryTargetsReply* results = invokeManager.queryTargets(request);
+
+	if (!results) {
+		qWarning() << "Can't query MIME type";
+	}
+	else {
+		results->setParent(this);
+		connect(results, SIGNAL(finished()), this, SLOT(onWildcardQueryResponse()));
+		_queryResults = results;
+	}
+}
+
+void WriterUI::onWildcardQueryResponse() {
+	qDebug() << "WriterUI::onWildcardQueryResponse()";
+	if (_queryResults == NULL) return;
+
+	if (_queryResults->error() != InvokeReplyError::None) {
+		qDebug() << "InvokeReplyError:" << _queryResults->error();
+		return;
+	}
+	if (_queryResults->actions().size() == 0) return;
+	InvokeAction action = _queryResults->actions().first();
+	if (action.targets().size() == 0) return;
+	qDebug() << "Label" << action.label();
+	// load the sheet
+	QmlDocument* qml = QmlDocument::create("asset:///ShareTargetPickerSheet.qml");
+	Sheet* sheet     = qml->createRootObject<Sheet>();
+	ArrayDataModel* dataModel = sheet->findChild<ArrayDataModel*>("shareModels");
+	qDebug() << "dataModel" << (dataModel!=NULL?true:false);
+	if (dataModel) {
+		foreach (InvokeTarget target, action.targets()) {
+			QVariantMap map;
+			map["title"]       = target.label();
+			map["imageSource"] = QUrl( QString("file://") + target.icon().toString() );
+			map["target"]      = target.name();
+			map["action"]      = action.name();
+			dataModel->append(map);
+		}
+	}
+	connect( sheet, SIGNAL(shareTargetPicked(QVariant)), this, SLOT(onWildcardShareTargetPicked(QVariant)) );
+	sheet->open();
+
+	delete _queryResults;
+	_queryResults = NULL;
+}
+
+QString WriterUI::exportToTempDir() {
+	// export the file to .slicktasks
+	QString fileName = correctFileName(mEmbeddedData["shareTitle"].toString().trimmed());
+	if (fileName.isEmpty()) fileName = "Untitled";
+	fileName += ".txt";
+
+	// create folder .slicktasks folder
+	QDir tmpDir(QDir::currentPath() + "/shared/documents/.writer_tmp");
+
+	if (!tmpDir.exists()) {
+		qDebug() << "Temporary Directory does not exist. Creating.." << tmpDir.absolutePath();
+		if (!tmpDir.mkdir( tmpDir.absolutePath() )) {
+			qDebug() << "Can't create " << tmpDir.absolutePath();
+			return "";
+		}
+	}
+
+	QString filePath = tmpDir.absolutePath() + "/" + fileName;
+
+	QFile file(filePath);
+	if (file.open(QIODevice::WriteOnly)) {
+		file.write( mEmbeddedData["shareBody"].toString().toUtf8() );
+		file.close();
+	}
+	else {
+		return "";
+	}
+
+	return filePath;
+}
+
+void WriterUI::cleanTemporarySharedFolder() {
+	QDir tmpDir( QDir::currentPath() + "/shared/documents/.writer_tmp" );
+	if (!tmpDir.exists()) return;
+
+	QStringList fileList = tmpDir.entryList( QStringList() << "*" );
+	foreach (QString fileName, fileList) {
+		if (fileName == "." || fileName == "..") continue;
+		QFile f(tmpDir.absolutePath() + "/" + fileName);
+		f.remove();
+	}
+	tmpDir.rmdir(tmpDir.absolutePath());
+}
+
+
+void WriterUI::onWildcardShareTargetPicked(QVariant target) {
+	qDebug() << "WriterUI::onWildcardShareTargetPicked:" << target;
+	if (!target.canConvert(QVariant::Map)) return;
+
+	QString filePath = exportToTempDir();
+	if (filePath.isEmpty())
+		return;
+	// invoke to share
+	QVariantMap map = target.toMap();
 	InvokeManager invokeManager;
 	InvokeRequest request;
 
-	request.setAction( "bb.action.ADD" );
-	request.setTarget( "sys.pim.remember.composer" );
-
-	QUrl uri( "remember://notebookentry?title=TheTitle&description=thedescsdderewrww" );
-	request.setUri( QString(uri.toEncoded()) );
-
+	request.setAction( map["action"].toString() );
+	request.setTarget( map["target"].toString() );
+	request.setMimeType( "*" );
+	request.setFileTransferMode( FileTransferMode::Preserve );
+	request.setUri( QUrl( "file://" + filePath ) );
 
 	invokeManager.invoke( request );
-	return
-	**/;
+}
 
+
+
+
+void WriterUI::actionShareDocument(QString title, QString body) {
 	qDebug() << "WriterUI::actionShareDocument";
 	InvokeManager invokeManager;
 	InvokeQueryTargetsRequest request;
@@ -563,6 +675,46 @@ void WriterUI::onTextShareTargetPicked(QVariant target) {
 	invokeManager.invoke( request );
 }
 
+
+void WriterUI::actionSaveToSharedFolder(QString title, QString body) {
+	QString fileName = title.trimmed();
+	if (fileName.isEmpty()) fileName = "Untitled";
+	fileName += ".txt";
+
+	mEmbeddedData["shareTitle"] = title;
+	mEmbeddedData["shareBody"]  = body;
+
+	FilePicker* picker = new FilePicker();
+	picker->setMode( FilePickerMode::Saver );
+	picker->setViewMode( FilePickerViewMode::ListView );
+	picker->setDefaultSaveFileNames( QStringList() << fileName );
+	connect( picker, SIGNAL(fileSelected(const QStringList&)),
+			 this, SLOT(onFileSelectedForSaveAsTxt(const QStringList&)) );
+
+	picker->open();
+
+}
+
+void WriterUI::onFileSelectedForSaveAsTxt(const QStringList& selectedFiles) {
+	if (selectedFiles.size() == 0 ) return;
+	if (!mEmbeddedData.contains("shareBody")) return;
+
+	qDebug() << "WriterUI::onFileSelectedForSaveAsTxt" << selectedFiles;
+
+	QString fileName = selectedFiles.first();
+
+	QFile file(fileName);
+
+	if (file.open(QIODevice::WriteOnly)) {
+		file.write( mEmbeddedData["shareBody"].toString().toUtf8() );
+		file.close();
+		showToasts("Saved.");
+	}
+	else {
+		showToasts("An error has occurred");
+	}
+}
+
 // End of Sharing Section /////////////////////////////////////////////////////
 
 void dumpMetaObject(const QMetaObject* metaObject) {
@@ -589,6 +741,13 @@ Page* WriterUI::currentEditorPage() {
 		}
 	}
 	return NULL;
+}
+
+void WriterUI::showToasts(const QString& message) {
+    if (mToast == NULL)
+        mToast = new bb::system::SystemToast( this );
+    mToast->setBody( message );
+    mToast->show();
 }
 
 bool WriterUI::isPhysicalKeyboardDevice2() {
@@ -628,8 +787,11 @@ bool WriterUI::determineVirtualKeyboardShown(int screenWidth, int screenHeight) 
 void WriterUI::onAppAboutToQuit() {
 	qDebug() << "WriterUI::onAppAboutToQuit()";
 	Page* page = currentEditorPage();
-	if (page)
+	if (page) {
 		QMetaObject::invokeMethod(page, "handleAppExitEvent" );
+	}
+
+	cleanTemporarySharedFolder();
 }
 
 //connect( app, SIGNAL(thumbnail()),   this, SLOT(onAppThumbnailed()) );

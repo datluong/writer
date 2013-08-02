@@ -175,6 +175,22 @@ Page {
             onTriggered: {
                 writerApp.actionShareDocument( titleTextArea.text, editorTextArea.text );
             }
+        },
+        ActionItem {
+            title: "Share As File"
+            ActionBar.placement: ActionBarPlacement.InOverflow
+            imageSource: "asset:///images/ic_share_file.png"
+            onTriggered: {
+                writerApp.actionShareDocumentAsAttachment(titleTextArea.text, editorTextArea.text);
+            }
+        },
+        ActionItem {
+            title: "Save As"
+            ActionBar.placement: ActionBarPlacement.InOverflow
+            imageSource: "asset:///images/ic_save_as.png"
+            onTriggered: {
+                writerApp.actionSaveToSharedFolder(titleTextArea.text, editorTextArea.text);
+            }
         }
     ]
     

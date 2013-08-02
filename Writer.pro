@@ -1,7 +1,7 @@
 APP_NAME = Writer
 
 CONFIG += qt warn_on cascades10
-LIBS += -lbbdevice -lbb -lbbsystem
+LIBS += -lbbdevice -lbb -lbbsystem -lbbcascadespickers
 
 include(config.pri)
 

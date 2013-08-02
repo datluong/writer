@@ -10,6 +10,7 @@
 #include <bb/cascades/Page>
 
 #include <bb/system/InvokeQueryTargetsReply>
+#include <bb/system/SystemToast>
 
 using namespace bb::cascades;
 using namespace bb::system;
@@ -49,11 +50,14 @@ public:
     Q_INVOKABLE bool determineVirtualKeyboardShown(int screenWidth, int screenHeight);
 
     Q_INVOKABLE void actionShareDocument(QString title, QString body);
+    Q_INVOKABLE void actionShareDocumentAsAttachment(QString title, QString body);
+    Q_INVOKABLE void actionSaveToSharedFolder(QString title, QString body);
 
 private:
     NavigationPane* mRootNavigationPane;
     QVariantMap mEmbeddedData;
     InvokeQueryTargetsReply * _queryResults;
+    bb::system::SystemToast* mToast;
 
     QString untitledFilePath(const QString& path, int counter);
     QString genFolderPath(QString path, int counter, QString defaultName = QString("Untitled Folder") );
@@ -66,6 +70,9 @@ private:
     void initializeAutosave();
 
     Page* currentEditorPage();
+    void showToasts( const QString& message );
+    QString exportToTempDir();
+    void cleanTemporarySharedFolder();
 
 private slots:
 	void onAppAboutToQuit();
@@ -76,6 +83,10 @@ private slots:
 	// sharing slots
 	void onTextQueryResponse();
 	void onTextShareTargetPicked(QVariant target);
+	void onFileSelectedForSaveAsTxt(const QStringList& selectedFiles);
+	void onWildcardQueryResponse();
+	void onWildcardShareTargetPicked(QVariant target);
+
 };
 
 }
