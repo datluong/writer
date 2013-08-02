@@ -142,6 +142,18 @@ Page {
                 }
             }
         } // end Controller Container
+        
+        attachedObjects: [
+            LayoutUpdateHandler {
+                onLayoutFrameChanged: {
+                    if (!compactWordCountView) {
+                        var isVirtualKbShown = writerApp.determineVirtualKeyboardShown(layoutFrame.width, layoutFrame.height);
+                        wordCountBar.opacity = isVirtualKbShown ? 0:1;
+                        wordCountBarHidden   = isVirtualKbShown;
+                    }
+                }
+            }
+        ]
     } // end Root Container
     
     attachedObjects: [
@@ -168,7 +180,7 @@ Page {
         return count;
     }
     
-    onCreationCompleted: {
+    onCreationCompleted: {        
         compactWordCountView = writerApp.isPhysicalKeyboardDevice();
         if (compactWordCountView) {
             editorTimer.start();

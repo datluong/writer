@@ -40,7 +40,10 @@ public:
     Q_INVOKABLE QVariantMap renameFolder( QString relativeFolderPath, QString newName );
     Q_INVOKABLE QString relativePath(QString filePath);
     Q_INVOKABLE bool isPhysicalKeyboardDevice();
+    Q_INVOKABLE bool isPhysicalKeyboardDevice2();
     Q_INVOKABLE QString correctFileName(const QString& fileName);
+
+    Q_INVOKABLE bool determineVirtualKeyboardShown(int screenWidth, int screenHeight);
 private:
     NavigationPane* mRootNavigationPane;
 

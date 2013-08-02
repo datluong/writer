@@ -4,8 +4,9 @@
 #include <bb/cascades/Application>
 #include <bb/cascades/QmlDocument>
 #include <bb/cascades/AbstractPane>
-
+#include <bb/cascades/OrientationSupport>
 #include <bb/device/HardwareInfo>
+#include <bb/device/DisplayInfo>
 
 #include <QDir>
 #include <QFileInfoList>
@@ -442,9 +443,38 @@ Page* WriterUI::currentEditorPage() {
 	return NULL;
 }
 
+bool WriterUI::isPhysicalKeyboardDevice2() {
+	bb::device::HardwareInfo hwInfo;
+	return hwInfo.isPhysicalKeyboardDevice();
+}
+
 bool WriterUI::isPhysicalKeyboardDevice() {
 	bb::device::HardwareInfo hwInfo;
 	return hwInfo.isPhysicalKeyboardDevice();
+	if (hwInfo.isPhysicalKeyboardDevice() == false)
+		return false;
+	// hwInfo return true on simulator
+	bb::device::DisplayInfo info( bb::device::DisplayInfo::primaryDisplayId() );
+	QSize size = info.pixelSize();
+	return size.width() == size.height();
+}
+
+/**
+ * Return true if virtual keyboard is defined
+ */
+bool WriterUI::determineVirtualKeyboardShown(int screenWidth, int screenHeight) {
+	Q_UNUSED(screenWidth);
+	if (isPhysicalKeyboardDevice()) return false;
+
+	bool isPortrait = OrientationSupport::instance()->orientation() == UIOrientation::Portrait;
+
+	bb::device::DisplayInfo info( bb::device::DisplayInfo::primaryDisplayId() );
+	QSize size = info.pixelSize();
+
+	int fullHeight = isPortrait ? std::max(size.width(), size.height()) : std::min(size.width(), size.height());
+
+
+	return (fullHeight - screenHeight) > 250;
 }
 
 void WriterUI::onAppAboutToQuit() {
