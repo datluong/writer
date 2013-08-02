@@ -299,7 +299,12 @@ Page {
 //                name: 'Hello',
 //                type: 'file'
 //            });
-        reloadDirectory();    
+        reloadDirectory();
+        
+        var lastEditedDocumentInfo = writerApp.lastDocumentInEditing();
+        if (lastEditedDocumentInfo.hasOwnProperty('path')) {
+            actionOpenFile( lastEditedDocumentInfo, {focusEditor:true});   
+        }
     }
     
     function reloadDirectory() {
@@ -388,6 +393,8 @@ Page {
         
         rootNavigationPane.push(editor);
         
+        writerApp.registerDocumentInEditing( filePath );
+
         if (options.focusEditor) {
             editor.focusEditor();
         }

@@ -6,14 +6,16 @@ device {
         SOURCES +=  $$quote($$BASEDIR/src/main.cpp) \
                  $$quote($$BASEDIR/src/writely/WriterUI.cpp)
 
-        HEADERS +=  $$quote($$BASEDIR/src/writely/WriterUI.hpp)
+        HEADERS +=  $$quote($$BASEDIR/src/GLConstants.h) \
+                 $$quote($$BASEDIR/src/writely/WriterUI.hpp)
     }
 
     CONFIG(release, debug|release) {
         SOURCES +=  $$quote($$BASEDIR/src/main.cpp) \
                  $$quote($$BASEDIR/src/writely/WriterUI.cpp)
 
-        HEADERS +=  $$quote($$BASEDIR/src/writely/WriterUI.hpp)
+        HEADERS +=  $$quote($$BASEDIR/src/GLConstants.h) \
+                 $$quote($$BASEDIR/src/writely/WriterUI.hpp)
     }
 }
 
@@ -22,7 +24,8 @@ simulator {
         SOURCES +=  $$quote($$BASEDIR/src/main.cpp) \
                  $$quote($$BASEDIR/src/writely/WriterUI.cpp)
 
-        HEADERS +=  $$quote($$BASEDIR/src/writely/WriterUI.hpp)
+        HEADERS +=  $$quote($$BASEDIR/src/GLConstants.h) \
+                 $$quote($$BASEDIR/src/writely/WriterUI.hpp)
     }
 }
 

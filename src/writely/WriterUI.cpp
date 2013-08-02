@@ -1,5 +1,6 @@
 // Default empty project template
 #include "WriterUI.hpp"
+#include "GLConstants.h"
 
 #include <bb/cascades/Application>
 #include <bb/cascades/QmlDocument>
@@ -28,6 +29,7 @@
 #include <QMetaObject>
 #include <QMetaMethod>
 #include <QTimer>
+#include <QSettings>
 
 using namespace bb::cascades;
 using namespace bb::system;
@@ -818,6 +820,41 @@ void WriterUI::onAutosaveTimerTimeout() {
 	Page* page = currentEditorPage();
 	if (page)
 		QMetaObject::invokeMethod(page, "handleAutoSaveEvent" );
+}
+
+/**
+ * Get the path of the last edited document in a previous session and clean the registry.
+ * @return    an empty QVariantMap is there is no document registered.
+ */
+QVariantMap WriterUI::lastDocumentInEditing() {
+	QSettings settings(kGLCompanyName, kGLAppName);
+	if ( !settings.contains( kGLSettingKeyActiveDocument ) )
+		return QVariantMap();
+
+	QString activeDocument = settings.value( kGLSettingKeyActiveDocument ).toString();
+	settings.remove( kGLSettingKeyActiveDocument );
+
+	QFileInfo fileInfo(activeDocument);
+
+	if (!fileInfo.exists())
+		return QVariantMap();
+
+	QVariantMap entry;
+	entry["type"] = "file";
+	entry["name"] = fileInfo.baseName();
+	entry["path"] = fileInfo.filePath();
+	return entry;
+}
+
+void WriterUI::registerDocumentInEditing(QString filePath) {
+	QSettings settings(kGLCompanyName, kGLAppName);
+	settings.setValue( kGLSettingKeyActiveDocument, filePath );
+}
+
+void WriterUI::unRegisterDocumentInEditing() {
+	QSettings settings(kGLCompanyName, kGLAppName);
+	if (settings.contains( kGLSettingKeyActiveDocument ))
+		settings.remove( kGLSettingKeyActiveDocument );
 }
 
 

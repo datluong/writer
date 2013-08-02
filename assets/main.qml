@@ -59,6 +59,7 @@ NavigationPane {
             var meta = page.glMetaData();
             if (meta.pageType == 'editor') {
                 page.saveDocument();
+                writerApp.unRegisterDocumentInEditing();
             }
         }
         page.destroy();

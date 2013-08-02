@@ -53,6 +53,10 @@ public:
     Q_INVOKABLE void actionShareDocumentAsAttachment(QString title, QString body);
     Q_INVOKABLE void actionSaveToSharedFolder(QString title, QString body);
 
+    Q_INVOKABLE void registerDocumentInEditing(QString filePath);
+    Q_INVOKABLE QVariantMap lastDocumentInEditing();
+    Q_INVOKABLE void unRegisterDocumentInEditing();
+
 private:
     NavigationPane* mRootNavigationPane;
     QVariantMap mEmbeddedData;
