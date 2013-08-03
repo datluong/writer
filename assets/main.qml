@@ -36,12 +36,11 @@ NavigationPane {
     }
     
     onPushTransitionEnded: {
-        if (page.hasOwnProperty('glMetaData')) {
-            var meta = page.glMetaData();
-            if (meta.pageType == 'documentBrowser') {
-//                page.handlePushEndedEvent();
-            }
-        }
+//        if (page.hasOwnProperty('glMetaData')) {
+//            var meta = page.glMetaData();
+//            if (meta.pageType == 'documentBrowser') {
+//            }
+//        }
     }
     onPopTransitionEnded: {
         console.log( '[main]OnPopTransitionEnded', page );

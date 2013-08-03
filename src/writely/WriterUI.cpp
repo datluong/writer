@@ -44,6 +44,7 @@ WriterUI::WriterUI(bb::cascades::Application *app)
 	mEmbeddedData = QVariantMap();
 	_queryResults = NULL;
 	mToast        = NULL;
+	mIsThumbnail  = false;
 
 	// filesystem initialization
 	initializeDocumentFolder();
@@ -113,8 +114,7 @@ QVariantMap WriterUI::createEmptyFolder( QString documentPath ) {
 	QFileInfo folderInfo( newFolderName );
 	QVariantMap entry;
 	entry["type"] = "folder";
-	entry["name"] = folderInfo.baseName();
-	entry["path"] = folderInfo.filePath();
+	loadFileInfo( entry, folderInfo);
 	qDebug() << "Created New Folder:" << entry;
 	return entry;
 }
@@ -151,10 +151,8 @@ QVariantMap WriterUI::renameFolder( QString relativeFolderPath, QString newName 
 
 	QVariantMap entry;
 	entry["type"] = "folder";
-	entry["name"] = info.baseName();
-	entry["path"] = info.filePath();
 	entry["relativePath"] = relativePath( info.filePath() );
-
+	loadFileInfo( entry, info );
 	qDebug() << "WriterUI::renameFolder:reesult:" << entry;
 	return entry;
 
@@ -192,8 +190,7 @@ QVariantMap WriterUI::createEmptyFile( QString documentPath ) {
 	QFileInfo fileInfo( newFile );
 	QVariantMap entry;
 	entry["type"] = "file";
-	entry["name"] = fileInfo.baseName();
-	entry["path"] = fileInfo.filePath();
+	loadFileInfo( entry, fileInfo );
 	return entry;
 }
 
@@ -268,8 +265,7 @@ QVariantList WriterUI::listDirectory(QString path) {
 		if ( fileInfo.isDir() ) {
 			QVariantMap entry;
 			entry["type"] = "folder";
-			entry["name"] = fileInfo.fileName();
-			entry["path"] = fileInfo.filePath();
+			loadFileInfo(entry, fileInfo);
 			docList << entry;
 			continue;
 		}
@@ -277,14 +273,30 @@ QVariantList WriterUI::listDirectory(QString path) {
 		if (fileInfo.isFile() && fileInfo.suffix().toLower() == "txt") {
 			QVariantMap entry;
 			entry["type"] = "file";
-			entry["name"] = fileInfo.baseName();
-			entry["path"] = fileInfo.filePath();
+			loadFileInfo(entry, fileInfo);
 			docList << entry;
 			continue;
 		}
 	}
 
 	return docList;
+}
+
+QVariantMap WriterUI::getFileInfo(QString filePath) {
+	QFileInfo fileInfo(filePath);
+	if (!fileInfo.exists()) return QVariantMap();
+
+	QVariantMap entry;
+	loadFileInfo(entry, fileInfo);
+	return entry;
+}
+
+void WriterUI::loadFileInfo( QVariantMap& entry, const QFileInfo& fileInfo) {
+	if (!entry.contains("type"))
+		entry["type"] = fileInfo.isDir() ? "folder" : "file";
+	entry["name"] = fileInfo.baseName();
+	entry["path"] = fileInfo.filePath();
+	entry["modified"] = fileInfo.lastModified().toMSecsSinceEpoch();
 }
 
 bool WriterUI::deleteFile(QString filePath) {
@@ -745,6 +757,18 @@ Page* WriterUI::currentEditorPage() {
 	return NULL;
 }
 
+Page* WriterUI::currentBrowserPage() {
+	if (mRootNavigationPane->count() > 0) {
+		Page* page = mRootNavigationPane->at( mRootNavigationPane->count()-1 );
+		if (page) {
+			if ( page->objectName() == "documentBrowserPage" ) {
+				return page;
+			}
+		}
+	}
+	return NULL;
+}
+
 void WriterUI::showToasts(const QString& message) {
     if (mToast == NULL)
         mToast = new bb::system::SystemToast( this );
@@ -801,6 +825,7 @@ void WriterUI::onAppAboutToQuit() {
 
 void WriterUI::onAppThumbnailed() {
 	qDebug() << "WriterUI::onAppThumbnailed()";
+	mIsThumbnail = true;
 	Page* page = currentEditorPage();
 	if (page)
 		QMetaObject::invokeMethod(page, "onThumbnailed" );
@@ -808,6 +833,7 @@ void WriterUI::onAppThumbnailed() {
 
 void WriterUI::onAppFullscreen() {
 	qDebug() << "WriterUI::onAppFullscreen";
+	mIsThumbnail = false;
 	Page* page = currentEditorPage();
 	if (page)
 		QMetaObject::invokeMethod(page, "onFullscreen" );
@@ -818,8 +844,15 @@ void WriterUI::onAppFullscreen() {
  */
 void WriterUI::onAutosaveTimerTimeout() {
 	Page* page = currentEditorPage();
-	if (page)
+	if (page) {
 		QMetaObject::invokeMethod(page, "handleAutoSaveEvent" );
+	}
+
+	Page* browserPage = currentBrowserPage();
+	if (browserPage) {
+		QMetaObject::invokeMethod(browserPage, "handlePeriodicEvent");
+	}
+
 }
 
 /**
@@ -841,8 +874,7 @@ QVariantMap WriterUI::lastDocumentInEditing() {
 
 	QVariantMap entry;
 	entry["type"] = "file";
-	entry["name"] = fileInfo.baseName();
-	entry["path"] = fileInfo.filePath();
+	loadFileInfo(entry, fileInfo);
 	return entry;
 }
 

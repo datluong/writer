@@ -1,11 +1,12 @@
 import bb.cascades 1.0
 import bb.system 1.0
 
-import 'wordcounter.js' as WordCounter
+import 'js/wordcounter.js' as WordCounter
+import 'js/timeassist.js'  as TimeAssist
 
 Page {
     id: documentBrowserPage
-    
+    objectName: "documentBrowserPage"
     // the path for browsing. Path must start with '/', with root path is '/'
     // format: /[..]/[..]
     property string documentPath: '/';
@@ -80,7 +81,19 @@ Page {
             dataModel: fileModels                   
             listItemComponents: [                
                 ListItemComponent {
-                    Container {                     
+
+                    Container {
+                        function descriptionForFileInfo(fileInfo) {
+                            if (fileInfo.hasOwnProperty('description')) {
+                                console.log('descriptionForFileInfo:using:description');
+                                return fileInfo.description;
+                            }
+                            if (fileInfo.hasOwnProperty('modified')) {
+                                console.log('descriptionForFileInfo:using:measureDistance()');
+                                var measure = TimeAssist.measureDistance( fileInfo.modified );
+                                return measure.description;
+                            }
+                        }
                         id: fileComponent
                         Container {
                             property int containterWith: 0
@@ -96,11 +109,12 @@ Page {
                                 verticalAlignment: VerticalAlignment.Center
                             }
                             Label {
-                                text: "Folder"
-                                visible: (ListItemData.type == 'folder')
+                                text: ((ListItemData.type == 'folder') ? "Folder" : descriptionForFileInfo(ListItemData) )
+//                                visible: (ListItemData.type == 'folder')
+                                visible: true
                                 horizontalAlignment: HorizontalAlignment.Right
                                 verticalAlignment: VerticalAlignment.Center
-                                textStyle.fontWeight: FontWeight.W500
+                                textStyle.fontWeight: (ListItemData.type == 'folder' ? FontWeight.W500 : FontWeight.W200)
                                 textStyle.fontSize: FontSize.XXSmall
                                 attachedObjects: [
                                     LayoutUpdateHandler {
@@ -155,7 +169,6 @@ Page {
                                 if (ListItemData.type == 'file' ) {
                                     // count the number of word
                                     var content = ListItem.view.loadFileContent_( ListItemData.path );
-//                                    var content = writerApp.loadFileContent( ListItemData.path );
                                     var wc = WordCounter.wordCount( content );
                                     documentActionSet.subtitle = '' + wc + (wc <= 1 ? ' word' : ' words');
                                 }
@@ -275,7 +288,7 @@ Page {
                     }
                 }
                 updateFolderEmptyIndicator();
-            }
+            }        
             
             /**
              * Wrapper method
@@ -308,6 +321,9 @@ Page {
     
     onCreationCompleted: {
         console.log('[DocumentBrowser]onCreationCompleted:documentPath:', documentPath );
+//        console.log( TimeAssist.measureDistance( new Date(2010,2,3) ).description );
+//        console.log( TimeAssist.measureDistance( new Date(2015,2,3) ).description );
+        
 //        fileModels.append({
 //                name: 'My random thoughts asdsadlkjsa dlkasjdlsakjdaslkd aslkjdaslkdj asl dalskjdaslkdj asd laskjdslakjda',
 //                type: 'folder'
@@ -410,6 +426,7 @@ Page {
         editor.documentPath  = fileInfo.path;
         editor.setEditorBodyContent( text );
         editor.documentTitleUpdated.connect( onDocumentTitleUpdated );
+        editor.documentUpdated.connect( onDocumentUpdated );
         editor.beginEditing();
         
         rootNavigationPane.push(editor);
@@ -430,8 +447,25 @@ Page {
      * {event_handler}
      */ 
     function onDocumentTitleUpdated( newTitle ) {
-        console.log('onDocumentTitleUpdated', newTitle);
         reloadDirectory();
+    }
+    
+    /**
+     * {event_handler}
+     */ 
+    function onDocumentUpdated( path ) {
+        for (var i = 0 ; i < fileModels.size(); i++) {
+            var entry = fileModels.value(i);
+            if (entry.path == path) {
+                var updatedEntry = writerApp.getFileInfo(path);
+                if (updatedEntry.hasOwnProperty('path')) {
+                    var measure = TimeAssist.measureDistance( updatedEntry.modified );
+                    updatedEntry.description = measure.description;
+                    updatedEntry.nextRefresh = measure.nextRefresh;                
+                    fileModels.replace(i, updatedEntry);
+                }
+            }
+        }
     }
 
     function onSubfolderNameChanged() {
@@ -498,7 +532,7 @@ Page {
             documentListView.visible = true;
             folderEmptyContainer.visible = false;
         }
-    }
+    }    
 
 //    /**
 //     * This handler is invoked when the Document Browser is pushed onto the stack
@@ -507,6 +541,30 @@ Page {
 //    function handlePushEndedEvent() {
 //        updateFolderEmptyIndicator();    
 //    }
+
+
+    /**
+     * This handler is invoked periodically by the writerApp instance 
+     */
+    function handlePeriodicEvent() {
+        console.log('[DocumentBrowser]handlePeriodicEvent');
+        for (var i = 0; i < fileModels.size(); i++) {
+            var entry = fileModels.value(i);
+            if (entry.type == 'file') {
+                if (entry.hasOwnProperty('nextRefresh')) {
+                    // only update if the time is passed
+                    var nowTs = (new Date()).getTime();
+                    if (nowTs < entry.nextRefresh) 
+                        continue;                    
+                }
+             
+                var measure = TimeAssist.measureDistance( entry.modified );
+                entry.description = measure.description;
+                entry.nextRefresh = measure.nextRefresh;
+                fileModels.replace(i,entry);
+            }
+        }
+    }
     
     function showMessageToast( message ) {
         mainMessageToast.body = message;

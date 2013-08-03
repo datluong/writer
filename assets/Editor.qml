@@ -18,6 +18,7 @@ Page {
     property double wordCountBarIdleTime: 2500;
     
     signal documentTitleUpdated(string newTitle);
+    signal documentUpdated(string path);
     
     Container {
         id: rootContainer
@@ -305,8 +306,12 @@ Page {
         if (status == 1) { // document title has changed
             documentTitleUpdated(titleTextArea.text);            
         }
+                
         if (status != 0 && status != 1) {
             // TODO show error message
+        }
+        else {                             
+            documentUpdated( documentPath );            
         }
     }
     
