@@ -115,31 +115,45 @@ Page {
                 background: Color.create(0, 0, 0, 0.6)
                 leftPadding: 12
                 rightPadding: 14
-                layout: StackLayout {
-                    orientation: LayoutOrientation.LeftToRight
+                Container {
+                    preferredHeight: 44
+                    layout: StackLayout {
+                        orientation: LayoutOrientation.LeftToRight
+                    }
+                    animations: [
+                        FadeTransition {
+                            id: touchAnimation                            
+                            duration: 100
+                            fromOpacity: 0.2
+                            toOpacity: 1
+                            onEnded: {
+                                if (editorPage.actionBarVisibility == ChromeVisibility.Hidden) {
+                                    editorPage.actionBarVisibility = ChromeVisibility.Visible;
+                                } else {
+                                    editorPage.actionBarVisibility = ChromeVisibility.Hidden;
+                                }                                    
+                            }                            
+                        }
+                    ]
+                    Label {
+                        id: wordCountLabel
+                        text: "0 word"
+                        textStyle.fontWeight: FontWeight.W200
+                        textStyle.fontSize: FontSize.PointValue
+                        textStyle.fontSizeValue: 7
+                        textStyle.color: Color.White                      
+                    }
+                    ImageView {
+                        id: wordCountIcon                    
+                        imageSource: "asset:///images/dots.png"
+                        verticalAlignment: VerticalAlignment.Center
+                    }                    
                 }
-                Label {
-                    id: wordCountLabel
-                    text: "0 word"
-                    textStyle.fontWeight: FontWeight.W200
-                    textStyle.fontSize: FontSize.PointValue
-                    textStyle.fontSizeValue: 7
-                    textStyle.color: Color.White
-                }
-                ImageView {
-                    id: wordCountIcon                    
-                    imageSource: "asset:///images/dots.png"
-                    verticalAlignment: VerticalAlignment.Center
-                }
+                
             }
             onTouch: {
                 if (event.isUp()) {
-                    if (editorPage.actionBarVisibility == ChromeVisibility.Hidden) {
-                        editorPage.actionBarVisibility = ChromeVisibility.Visible;
-                    }
-                    else {
-                        editorPage.actionBarVisibility = ChromeVisibility.Hidden;
-                    }                    
+                    touchAnimation.play();                         
                 }
             }
         } // end Controller Container
