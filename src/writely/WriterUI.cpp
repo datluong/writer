@@ -6,6 +6,7 @@
 #include <bb/cascades/QmlDocument>
 #include <bb/cascades/AbstractPane>
 #include <bb/cascades/OrientationSupport>
+
 #include <bb/cascades/Sheet>
 #include <bb/cascades/ArrayDataModel>
 #include <bb/cascades/pickers/FilePicker>
@@ -45,6 +46,11 @@ WriterUI::WriterUI(bb::cascades::Application *app)
 	_queryResults = NULL;
 	mToast        = NULL;
 	mIsThumbnail  = false;
+	mDisplaySize  = NULL;
+
+	mThemeManager = new ThemeManager();
+	mThemeManager->setParent( this );
+	connect( mThemeManager, SIGNAL(themeChanged(QVariantMap)), this, SLOT(onThemeChanged(QVariantMap)) );
 
 	// filesystem initialization
 	initializeDocumentFolder();
@@ -54,6 +60,8 @@ WriterUI::WriterUI(bb::cascades::Application *app)
     // set parent to created document to ensure it exists for the whole application lifetime
     QmlDocument *qml = QmlDocument::create("asset:///main.qml").parent(this);
     qml->setContextProperty( "writerApp", this);
+    qml->setContextProperty( "themeManager", mThemeManager );
+
     // create root object for the UI
     AbstractPane *root = qml->createRootObject<AbstractPane>();
     // set created root object as a scene
@@ -792,6 +800,8 @@ bool WriterUI::isPhysicalKeyboardDevice() {
 	return size.width() == size.height();
 }
 
+
+
 /**
  * Return true if virtual keyboard is defined
  */
@@ -809,6 +819,42 @@ bool WriterUI::determineVirtualKeyboardShown(int screenWidth, int screenHeight) 
 
 	return (fullHeight - screenHeight) > 250;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// Orientation
+
+
+UIOrientation::Type WriterUI::currentOrientation() {
+    // if is Q10, always return Landscape
+    if (!mDisplaySize) {
+        bb::device::DisplayInfo info( bb::device::DisplayInfo::primaryDisplayId() );
+        QSize size = info.pixelSize();
+        mDisplaySize = new QSize( size.width(), size.height() );
+    }
+    if (mDisplaySize->width() == mDisplaySize->height())
+        return UIOrientation::Landscape;
+    return OrientationSupport::instance()->orientation();
+}
+
+int WriterUI::displayWidthForCurrentOrientation() {
+    return displayWidth( currentOrientation() );
+}
+
+int WriterUI::displayWidth(UIOrientation::Type type) {
+	if (!mDisplaySize) {
+		bb::device::DisplayInfo info;
+		QSize size = info.pixelSize();
+		mDisplaySize = new QSize( size.width(), size.height() );
+	}
+	if (type == UIOrientation::Portrait ) {
+		return std::min( mDisplaySize->width(), mDisplaySize->height() );
+	}
+	else {
+		return std::max( mDisplaySize->width(), mDisplaySize->height() );
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 void WriterUI::onAppAboutToQuit() {
 	qDebug() << "WriterUI::onAppAboutToQuit()";
@@ -889,5 +935,18 @@ void WriterUI::unRegisterDocumentInEditing() {
 		settings.remove( kGLSettingKeyActiveDocument );
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Theme
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * {event_handler}
+ * Fired when the app's theme is changed.
+ * This method will request all pages on view stack to update its theme
+ * if the page support the applyCustomTheme() protocol
+ */
+void WriterUI::onThemeChanged( QVariantMap newThemeInfo ) {
+	QMetaObject::invokeMethod( mRootNavigationPane, "applyCustomTheme" );
+}
 
 } // end namespace

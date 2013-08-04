@@ -22,9 +22,10 @@ Page {
     
     Container {
         id: rootContainer
+        horizontalAlignment: HorizontalAlignment.Fill
         layout: DockLayout {}
         ScrollView {                
-            Container {
+            Container {                     
                 id: editorContainer
                 layout: StackLayout {}
                 Container {
@@ -299,7 +300,9 @@ Page {
      * QML Page defines glMetaData() method for inter-operating with other QML Objects  
      */
     function glMetaData() {
-        return { pageType: 'editor' };
+        return { pageType: 'editor',
+                 themeSupport: true
+        };
     }
     
     function beginEditing() {
@@ -358,6 +361,34 @@ Page {
     function clearTitle() {
         titleTextArea.resetText();
     }
-    
-    
+
+    function applyCustomTheme(themeInfo) {
+        if (themeInfo.name == 'Light') { //default theme
+            return;
+        }
+        
+        if (themeInfo.hasOwnProperty('backgroundColor')) {
+            rootContainer.background = Color.create( themeInfo.backgroundColor );
+            editorContainer.background = Color.create(themeInfo.backgroundColor);
+        }
+        
+        if (themeInfo.hasOwnProperty('textColor')) {
+            titleTextArea.textStyle.color = Color.create( themeInfo.textColor );
+            editorTextArea.textStyle.color = Color.create( themeInfo.textColor );
+        }
+        
+//        if (themeInfo.hasOwnProperty('')) {}
+        if (themeInfo.hasOwnProperty('wordCountBackgroundColor')) {
+            controllerInnerContainer.background = Color.create( themeInfo.wordCountBackgroundColor );
+        }
+               
+        if (themeInfo.hasOwnProperty('wordCountTextColor')) {
+            wordCountLabel.textStyle.color = Color.create( themeInfo.wordCountTextColor);
+        }
+        
+        if (themeInfo.hasOwnProperty('wordCountDotsImageSource')) {
+            wordCountIcon.imageSource = themeInfo.wordCountDotsImageSource;
+        }
+    }
+
 } // end Page

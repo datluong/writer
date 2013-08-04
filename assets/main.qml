@@ -63,5 +63,19 @@ NavigationPane {
         }
         page.destroy();
     }
+    
+    function applyCustomTheme() {
+        var themeInfo = themeManager.currentTheme()
+        console.log('[Nav]applyCustomTheme', themeInfo.name );
+        for (var i = 0; i < rootNavigationPane.count(); i++) {
+            var thePage = rootNavigationPane.at(i);
+            if (thePage.hasOwnProperty('glMetaData')) {
+                var meta = thePage.glMetaData();
+                if (meta.themeSupport === true) 
+                    thePage.applyCustomTheme( themeInfo );
+            }
+        }
+    }
+    
 } // end of NavigationPane
     

@@ -5,12 +5,16 @@
 #include <QObject>
 #include <QVariant>
 #include <QVariantList>
+#include <QSize>
 
 #include <bb/cascades/NavigationPane>
 #include <bb/cascades/Page>
+#include <bb/cascades/UIOrientation>
 
 #include <bb/system/InvokeQueryTargetsReply>
 #include <bb/system/SystemToast>
+
+#include "ThemeManager.h"
 
 using namespace bb::cascades;
 using namespace bb::system;
@@ -58,12 +62,15 @@ public:
     Q_INVOKABLE QVariantMap lastDocumentInEditing();
     Q_INVOKABLE void unRegisterDocumentInEditing();
 
+    Q_INVOKABLE int displayWidthForCurrentOrientation();
 private:
     NavigationPane* mRootNavigationPane;
     QVariantMap mEmbeddedData;
     InvokeQueryTargetsReply * _queryResults;
     bb::system::SystemToast* mToast;
     bool mIsThumbnail;
+    QSize* mDisplaySize;
+    ThemeManager* mThemeManager;
 
     QString untitledFilePath(const QString& path, int counter);
     QString genFolderPath(QString path, int counter, QString defaultName = QString("Untitled Folder") );
@@ -82,6 +89,10 @@ private:
     void cleanTemporarySharedFolder();
     void loadFileInfo( QVariantMap& map, const QFileInfo& fileInfo );
 
+    // orientation
+    UIOrientation::Type currentOrientation();
+    int displayWidth(UIOrientation::Type type);
+
 private slots:
 	void onAppAboutToQuit();
 	void onAutosaveTimerTimeout();
@@ -95,6 +106,7 @@ private slots:
 	void onWildcardQueryResponse();
 	void onWildcardShareTargetPicked(QVariant target);
 
+	void onThemeChanged(QVariantMap themeInfo);
 };
 
 }

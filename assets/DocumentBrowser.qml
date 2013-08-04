@@ -11,10 +11,14 @@ Page {
     // format: /[..]/[..]
     property string documentPath: '/';
     property bool   documentBrowserInitialized: false;
-    
+    property string themeRowTextColor: '';
+    property string rowDividerColor: '';
+    property string rowHighlightColor: '';
+        
     signal folderNameChanged();
     
     Container {
+        id: pageRootContainer
         layout: StackLayout {}
         leftPadding: 24
         rightPadding: 24        
@@ -58,6 +62,7 @@ Page {
         } // end Title Container
         Container {
             //seperator
+            id: mainDivider
             background: Color.DarkGray
             horizontalAlignment: HorizontalAlignment.Fill
             preferredHeight: 2
@@ -70,6 +75,7 @@ Page {
             horizontalAlignment: HorizontalAlignment.Fill
             topPadding: 32
             Label {
+                id: folderEmptyLabel
                 text: "No documents"
                 horizontalAlignment: HorizontalAlignment.Center
                 textStyle.fontWeight: FontWeight.W200
@@ -80,9 +86,22 @@ Page {
             id: documentListView
             dataModel: fileModels                   
             listItemComponents: [                
-                ListItemComponent {
-
+                ListItemComponent {                    
                     Container {
+//                        preferredWidth: ListItem.view.determineFullWidth();
+                        preferredWidth: 2000
+                        function themedRowTextColor_() {
+                            return ListItem.view.themedRowTextColor();
+                        }
+
+                        function themedDividerColor_() {
+                            return ListItem.view.themedDividerColor();
+                        }
+
+                        function themedRowHighlightColor_() {
+                            return ListItem.view.themedRowHighlightColor();
+                        } 
+                        
                         function descriptionForFileInfo(fileInfo) {
                             if (fileInfo.hasOwnProperty('description')) {
                                 console.log('descriptionForFileInfo:using:description');
@@ -93,7 +112,7 @@ Page {
                                 var measure = TimeAssist.measureDistance( fileInfo.modified );
                                 return measure.description;
                             }
-                        }
+                        }                        
                         id: fileComponent
                         Container {
                             property int containterWith: 0
@@ -106,16 +125,18 @@ Page {
                                 id: documentNameLabel
                                 text: ListItemData.name
                                 textStyle.fontWeight: FontWeight.W200
+                                textStyle.color: themedRowTextColor_();
                                 verticalAlignment: VerticalAlignment.Center
+                                
                             }
                             Label {
                                 text: ((ListItemData.type == 'folder') ? "Folder" : descriptionForFileInfo(ListItemData) )
-//                                visible: (ListItemData.type == 'folder')
                                 visible: true
                                 horizontalAlignment: HorizontalAlignment.Right
                                 verticalAlignment: VerticalAlignment.Center
                                 textStyle.fontWeight: (ListItemData.type == 'folder' ? FontWeight.W500 : FontWeight.W200)
                                 textStyle.fontSize: FontSize.XXSmall
+                                textStyle.color: themedRowTextColor_()
                                 attachedObjects: [
                                     LayoutUpdateHandler {
                                         onLayoutFrameChanged: {                                                    
@@ -124,12 +145,18 @@ Page {
                                         }
                                     }
                                 ]
-                            }                            
-                        }
-                        Divider {
+                            }                    
+                        } // end ListItem's main Container
+
+                        Container { //divider
                             topMargin: 0
                             bottomMargin: 0
+                            preferredHeight: 2
+                            horizontalAlignment: HorizontalAlignment.Fill
+//                            background: Color.create('#e4e4e4');
+                            background: themedDividerColor_();
                         }
+                        
                         contextActions: [                            
                             ActionSet {
                                 id: documentActionSet
@@ -146,9 +173,10 @@ Page {
                                 }
                             }
                         ] // end of Context Action
+                        
                         ListItem.onSelectionChanged: {
                             console.log('ListItem.onSelectionChanged', selected);
-                            listItemContainer.background = selected ? Color.create('#ebebeb') : Color.Transparent;
+                            listItemContainer.background = selected ? themedRowHighlightColor_() : Color.Transparent;
                         }
                         ListItem.onActivationChanged: {
                             var activeChangable = active;
@@ -173,7 +201,7 @@ Page {
                                     documentActionSet.subtitle = '' + wc + (wc <= 1 ? ' word' : ' words');
                                 }
                             }
-                            listItemContainer.background = activeChangable ? Color.create('#ebebeb') : Color.Transparent;
+                            listItemContainer.background = activeChangable ? themedRowHighlightColor_() : Color.Transparent;
                         }
                         attachedObjects: [
                             LayoutUpdateHandler {
@@ -181,9 +209,8 @@ Page {
                                     listItemContainer.containterWith = layoutFrame.width;
                                 }
                             }
-                        ]
-                    }
-                    
+                        ]                        
+                    }  // end ListItem's mainContainer                  
                 } // end ListItemComponent Definition
             ]
             multiSelectAction: MultiSelectActionItem {
@@ -296,6 +323,36 @@ Page {
             function loadFileContent_(path) {
                 return writerApp.loadFileContent(path);
             }
+            
+            function determineFullWidth() {
+                return writerApp.displayWidthForCurrentOrientation();
+            }
+            
+            function themedRowTextColor() {
+                console.log('themedRowTextColor');
+                if (themeRowTextColor.length > 0) {
+                    return Color.create(themeRowTextColor);
+                }
+                else
+                    return null;
+            }
+            
+            function themedDividerColor() {
+                console.log('themedDividerColor');
+                if (rowDividerColor.length > 0)
+                    return Color.create(rowDividerColor);
+                else
+                    return Color.create('#e4e4e4');
+            }
+            
+            function themedRowHighlightColor() {
+                console.log('themedRowHighlightColor');
+                if (rowHighlightColor.length > 0)
+                    return Color.create(rowHighlightColor);
+                else
+                    return Color.create('#ebebeb'); 
+            }
+            
         } // end of ListView
 
         
@@ -316,6 +373,13 @@ Page {
             onTriggered: {
                 actionNewFolder();
             }
+        },
+        ActionItem {
+            title: "Theme Change!"
+            ActionBar.placement: ActionBarPlacement.InOverflow
+            onTriggered: {
+                themeManager.setTheme("Dark");
+            }
         }
     ]
     
@@ -335,7 +399,7 @@ Page {
 //        fileModels.append({
 //                name: 'Hello',
 //                type: 'file'
-//            });
+//            }); return;
         reloadDirectory();
         
         var lastEditedDocumentInfo = writerApp.lastDocumentInEditing();
@@ -382,6 +446,9 @@ Page {
         newBrowser.enableTitleEditing();
         
         newBrowser.folderNameChanged.connect(onSubfolderNameChanged);
+        
+        newBrowser.applyCustomTheme( themeManager.currentTheme() );
+        
         rootNavigationPane.push(newBrowser);
         newBrowser.documentBrowserInitialized = true;
         
@@ -429,6 +496,7 @@ Page {
         editor.documentUpdated.connect( onDocumentUpdated );
         editor.beginEditing();
         
+        editor.applyCustomTheme(themeManager.currentTheme());
         rootNavigationPane.push(editor);
         
         writerApp.registerDocumentInEditing( filePath );
@@ -576,8 +644,35 @@ Page {
      */
     function glMetaData() {
         return {
-            pageType: 'documentBrowser'
+            pageType: 'documentBrowser',
+            themeSupport: true
         };
+    }
+    
+    function applyCustomTheme( themeInfo ) {
+        if (themeInfo.name == 'Light') {
+            themeRowTextColor = '';
+            return;
+        }
+        
+        if (themeInfo.hasOwnProperty('backgroundColor')) {
+            pageRootContainer.background = Color.create( themeInfo.backgroundColor );                
+        }
+        if (themeInfo.hasOwnProperty('textColor')) {            
+            titleTextField.textStyle.color = Color.create( themeInfo.textColor );
+            folderEmptyLabel.textStyle.color = Color.create(themeInfo.textColor);
+            
+            // a dilemma
+            // listitem's color changed automatically when themeRowTextColor property changed
+            // there must be a binding with themeRowTextColor property somewhere ?? #clueless
+            themeRowTextColor = themeInfo.textColor;            
+        }
+        if (themeInfo.hasOwnProperty('dividerColor')) {
+            rowDividerColor = themeInfo.dividerColor;            
+        } 
+        if (themeInfo.hasOwnProperty('rowHighlightColor')) {
+            rowHighlightColor = themeInfo.rowHighlightColor;
+        }
     }
 
 } // end of Page
