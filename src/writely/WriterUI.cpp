@@ -1,6 +1,7 @@
 // Default empty project template
 #include "WriterUI.hpp"
 #include "GLConstants.h"
+#include "GLFolderArchiver.h"
 
 #include <bb/cascades/Application>
 #include <bb/cascades/QmlDocument>
@@ -946,7 +947,112 @@ void WriterUI::unRegisterDocumentInEditing() {
  * if the page support the applyCustomTheme() protocol
  */
 void WriterUI::onThemeChanged( QVariantMap newThemeInfo ) {
+	Q_UNUSED( newThemeInfo );
 	QMetaObject::invokeMethod( mRootNavigationPane, "applyCustomTheme" );
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// Backup - Restore
+///////////////////////////////////////////////////////////////////////////////
+
+void WriterUI::actionBackup() {
+	// open file picker to select a file
+	QDateTime now = QDateTime::currentDateTime();
+	QString fileName = QString("%1-backup-%2.zip").arg( kGLAppName, now.date().toString( "MMM-dd-yyyy") );
+
+	FilePicker* picker = new FilePicker();
+	picker->setMode( FilePickerMode::Saver );
+	picker->setViewMode( FilePickerViewMode::ListView );
+	picker->setDefaultSaveFileNames( QStringList() << fileName );
+	connect( picker, SIGNAL(fileSelected(const QStringList&)),
+			 this, SLOT(onFileSelectedForBackup(const QStringList&)) );
+
+	picker->open();
+}
+
+
+void WriterUI::onFileSelectedForBackup(const QStringList& selectedFiles) {
+	if (selectedFiles.size() == 0) return;
+
+	qDebug() << "WriterUI::onFileSelectedForBackup" << selectedFiles.first();
+	GLFolderArchiver archiver;
+	int status = archiver.zipFolder( documentsFolderPath(), selectedFiles.first());
+	if (status == 0) {
+		showToasts("Backup created!");
+	}
+}
+
+void WriterUI::actionRestore() {
+
+	FilePicker* picker = new FilePicker();
+	picker->setMode( FilePickerMode::Picker );
+	picker->setViewMode( FilePickerViewMode::ListView );
+	picker->setFilter( QStringList() << "*.zip" );
+
+	connect(picker, SIGNAL(fileSelected(const QStringList&)),
+		    this, SLOT(onBackupFileSelectedForRestoring(const QStringList&)));
+
+	picker->open();
+}
+
+void WriterUI::onBackupFileSelectedForRestoring(const QStringList& selectedFiles) {
+	if (selectedFiles.size() == 0) return;
+	qDebug() << "WriterUI::onBackupFileSelectedForRestoring:" << selectedFiles;
+
+	GLFolderArchiver archiver;
+	int count = archiver.countTxtFiles( selectedFiles.first() );
+
+	if (count < 0) {
+		showToasts("Archive is invalid");
+		return;
+	}
+
+	SystemDialog* dialog = new SystemDialog("OK", "Cancel");
+	dialog->setTitle( "Restore" );
+	dialog->setBody( QString("This will replace your existing documents with data in backup file (Documents in backup file: %1). Proceed?").arg(count) );
+	bool success = connect(dialog,
+		 SIGNAL(finished(bb::system::SystemUiResult::Type)),
+		 this,
+		 SLOT(onRestoreConfirmationDialogFinished(bb::system::SystemUiResult::Type)));
+
+	mEmbeddedData["restoreFilePath"] = selectedFiles.first();
+
+	if (!success) {
+		dialog->deleteLater();
+	}
+	else {
+		dialog->show();
+	}
+
+}
+
+void WriterUI::onRestoreConfirmationDialogFinished(bb::system::SystemUiResult::Type resultType) {
+	if ( resultType != SystemUiResult::ConfirmButtonSelection )
+		return;
+	if (!mEmbeddedData.contains("restoreFilePath")) return;
+	QString restoreFilePath = mEmbeddedData["restoreFilePath"].toString();
+	mEmbeddedData.remove( "restoreFilePath ");
+
+	// restore
+	qDebug() << "Restoring.." << restoreFilePath;
+
+	// first, clear the document folder
+	deleteFolder( documentsFolderPath() );
+	initializeDocumentFolder();
+
+	GLFolderArchiver archiver;
+	archiver.unarchiveTxtFiles( restoreFilePath, documentsFolderPath() );
+	// after restoration complete, navigate to root Folder
+	QMetaObject::invokeMethod( mRootNavigationPane, "resetNavigationStack" );
+
+	qDebug() << "Restoration complete!";
+	showToasts( "Restoration complete!" );
+}
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+// End of Backup/Restore
+///////////////////////////////////////////////////////////////////////////////
 
 } // end namespace

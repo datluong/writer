@@ -20,6 +20,10 @@ NavigationPane {
             id: themePickerSheetDef
             source: "ThemePickerSheet.qml"
         },
+        ComponentDefinition {
+            id: backupRestoreSheetDef
+            source: "BackupRestoreSheet.qml"
+        },
         SystemDialog {
             id: deleteConfirmationDialog
             title: "Delete"
@@ -80,6 +84,23 @@ NavigationPane {
                 var meta = thePage.glMetaData();
                 if (meta.themeSupport === true) 
                     thePage.applyCustomTheme( themeInfo );
+            }
+        }
+    }
+    
+    /**
+     * Pop all Pages on stack to root page and refresh the root page
+     */
+    function resetNavigationStack() {
+        while (rootNavigationPane.count() > 1) {
+            rootNavigationPane.pop();
+        }
+        if (rootNavigationPane.count() == 1) {
+            var thePage = rootNavigationPane.at(0);
+            if (thePage.hasOwnProperty('glMetaData')) {
+                var meta = thePage.glMetaData();
+                if (meta.pageType == 'documentBrowser')
+                    thePage.reloadDirectory();
             }
         }
     }

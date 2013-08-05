@@ -63,6 +63,10 @@ public:
     Q_INVOKABLE void unRegisterDocumentInEditing();
 
     Q_INVOKABLE int displayWidthForCurrentOrientation();
+
+    Q_INVOKABLE void actionBackup();
+    Q_INVOKABLE void actionRestore();
+
 private:
     NavigationPane* mRootNavigationPane;
     QVariantMap mEmbeddedData;
@@ -107,6 +111,10 @@ private slots:
 	void onWildcardShareTargetPicked(QVariant target);
 
 	void onThemeChanged(QVariantMap themeInfo);
+	void onFileSelectedForBackup(const QStringList& selectedFiles);
+	void onBackupFileSelectedForRestoring(const QStringList& selecteDFiles);
+	void onRestoreConfirmationDialogFinished(bb::system::SystemUiResult::Type resultType);
+
 };
 
 }

@@ -15,6 +15,7 @@ Page {
     property string rowDividerColor: '';
     property string rowHighlightColor: '';
     property variant themePickerSheet;
+    property variant backupRestoreSheet;
     
     signal folderNameChanged();
     
@@ -382,6 +383,14 @@ Page {
             onTriggered: {
                 actionPickTheme();
             }
+        },
+        ActionItem {
+            title: "Backup/Restore"
+            ActionBar.placement: ActionBarPlacement.InOverflow
+            imageSource: "asset:///images/icon-backup.png"
+            onTriggered: {
+                actionBackupRestore();
+            }
         }
     ]
     
@@ -699,6 +708,27 @@ Page {
     
     function onThemePickerSheetClosed() {
         themePickerSheet.destroy();
+    }
+    
+    ///////////////////////////////////////////////////////////////////////////
+    function actionBackupRestore() {
+        backupRestoreSheet = backupRestoreSheetDef.createObject();
+        backupRestoreSheet.closed.connect(  onBackupRestoreSheetClosed );
+        backupRestoreSheet.backup.connect(  onBackupActionSelected );
+        backupRestoreSheet.restore.connect( onRestoreActionSelected );
+        backupRestoreSheet.open();
+    }
+    
+    function onBackupRestoreSheetClosed() {
+        backupRestoreSheet.destroy();
+    }
+
+    function onBackupActionSelected() {
+        writerApp.actionBackup();
+    }
+    
+    function onRestoreActionSelected() {
+        writerApp.actionRestore();
     }
     
 } // end of Page

@@ -1,5 +1,5 @@
 APP_NAME = Writer
-
+DEFINES += QUAZIP_STATIC
 CONFIG += qt warn_on cascades10
 LIBS += -lbbdevice -lbb -lbbsystem -lbbcascadespickers
 
