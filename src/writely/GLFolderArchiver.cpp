@@ -143,6 +143,7 @@ void GLFolderArchiver::unarchiveTxtFiles( const QString& archiveFilePath, const 
 		outFile.close();
 
 		// update timestamp
+		// @non-portable
 		int ts = zipFileInfo.dateTime.toMSecsSinceEpoch() / 1000L;
 		struct utimbuf modTime;
 		modTime.modtime = ts;

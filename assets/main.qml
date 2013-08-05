@@ -36,6 +36,7 @@ NavigationPane {
     ]
     
     onCreationCompleted: {
+        rootBrowser.disableRenaming();
         if (themeManager.currentThemeName() != themeManager.defaultThemeName() ) {
             rootBrowser.applyCustomTheme( themeManager.currentTheme() );
         }

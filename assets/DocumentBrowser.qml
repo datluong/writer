@@ -359,7 +359,7 @@ Page {
 
         
     } // end of Root Container
-    actions: [
+    actions: [        
         ActionItem {
             title: "New Document"
             ActionBar.placement: ActionBarPlacement.OnBar
@@ -377,6 +377,16 @@ Page {
             }
         },
         ActionItem {
+            id: renameFolderActionItem
+            title: "Rename Folder"
+            ActionBar.placement: ActionBarPlacement.InOverflow
+            imageSource: "asset:///images/ic_rename.png"
+            onTriggered: {
+                titleTextField.editor.setSelection(0, titleTextField.text.length);
+                titleTextField.requestFocus();
+            }
+        },
+        ActionItem {
             title: "Theme"
             ActionBar.placement: ActionBarPlacement.InOverflow
             imageSource: "asset:///images/icon-themes.png"
@@ -385,7 +395,7 @@ Page {
             }
         },
         ActionItem {
-            title: "Backup/Restore"
+            title: "Backup/Restore"            
             ActionBar.placement: ActionBarPlacement.InOverflow
             imageSource: "asset:///images/icon-backup.png"
             onTriggered: {
@@ -417,6 +427,11 @@ Page {
         if (lastEditedDocumentInfo.hasOwnProperty('path')) {
             actionOpenFile( lastEditedDocumentInfo, {focusEditor:true});   
         }
+                         
+    }
+    
+    function disableRenaming() {
+        documentBrowserPage.removeAction( renameFolderActionItem );
     }
     
     function reloadDirectory() {
