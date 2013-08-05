@@ -15,7 +15,8 @@ Page {
     property bool   wordCountBarHidden: false;
     property bool   timerActive: false;
     property double lastStrokeTime: 0;
-    property double wordCountBarIdleTime: 2500;
+    property double wordCountBarIdleTime: 2500
+    property variant themePickerSheet;
     
     signal documentTitleUpdated(string newTitle);
     signal documentUpdated(string path);
@@ -207,6 +208,14 @@ Page {
             onTriggered: {
                 writerApp.actionSaveToSharedFolder(titleTextArea.text, editorTextArea.text);
             }
+        },
+        ActionItem {
+            title: "Theme"
+            ActionBar.placement: ActionBarPlacement.InOverflow
+            imageSource: "asset:///images/icon-themes.png"
+            onTriggered: {
+                actionPickTheme();
+            }
         }
     ]
     
@@ -389,6 +398,21 @@ Page {
         if (themeInfo.hasOwnProperty('wordCountDotsImageSource')) {
             wordCountIcon.imageSource = themeInfo.wordCountDotsImageSource;
         }
+    }
+
+    function actionPickTheme() {
+        themePickerSheet = themePickerSheetDef.createObject();
+        themePickerSheet.closed.connect(onThemePickerSheetClosed);
+        themePickerSheet.themePicked.connect(onThemePicked);
+        themePickerSheet.open();
+    }
+
+    function onThemePicked(themeName) {
+        themeManager.setTheme(themeName);
+    }
+
+    function onThemePickerSheetClosed() {
+        themePickerSheet.destroy();
     }
 
 } // end Page

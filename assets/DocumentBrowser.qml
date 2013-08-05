@@ -14,7 +14,8 @@ Page {
     property string themeRowTextColor: '';
     property string rowDividerColor: '';
     property string rowHighlightColor: '';
-        
+    property variant themePickerSheet;
+    
     signal folderNameChanged();
     
     Container {
@@ -46,7 +47,7 @@ Page {
                 textStyle.fontWeight: FontWeight.W600
                 text: "WRITER"
                 implicitLayoutAnimationsEnabled: false
-                textStyle.textAlign: TextAlign.Center
+//                textStyle.textAlign: TextAlign.Center
                 clearButtonVisible: false
                 backgroundVisible: false
                 focusHighlightEnabled: false
@@ -375,10 +376,11 @@ Page {
             }
         },
         ActionItem {
-            title: "Theme Change!"
+            title: "Theme"
             ActionBar.placement: ActionBarPlacement.InOverflow
+            imageSource: "asset:///images/icon-themes.png"
             onTriggered: {
-                themeManager.setTheme("Dark");
+                actionPickTheme();
             }
         }
     ]
@@ -651,7 +653,13 @@ Page {
     
     function applyCustomTheme( themeInfo ) {
         if (themeInfo.name == 'Light') {
-            themeRowTextColor = '';
+            themeRowTextColor = themeInfo.textColor;
+            rowDividerColor = themeInfo.dividerColor;
+            rowHighlightColor = themeInfo.rowHighlightColor;
+            pageRootContainer.resetBackground();
+            titleTextField.textStyle.resetColor();
+            folderEmptyLabel.textStyle.resetColor();
+            mainDivider.background = Color.create( themeInfo.titleDividerColor );
             return;
         }
         
@@ -670,9 +678,27 @@ Page {
         if (themeInfo.hasOwnProperty('dividerColor')) {
             rowDividerColor = themeInfo.dividerColor;            
         } 
+        if (themeInfo.hasOwnProperty('titleDividerColor')) {
+            mainDivider.background = Color.create( themeInfo.titleDividerColor );
+        }
         if (themeInfo.hasOwnProperty('rowHighlightColor')) {
             rowHighlightColor = themeInfo.rowHighlightColor;
         }
     }
 
+    function actionPickTheme() {
+        themePickerSheet = themePickerSheetDef.createObject();
+        themePickerSheet.closed.connect( onThemePickerSheetClosed );
+        themePickerSheet.themePicked.connect( onThemePicked );
+        themePickerSheet.open();
+    }
+    
+    function onThemePicked(themeName) {
+        themeManager.setTheme(themeName);
+    }
+    
+    function onThemePickerSheetClosed() {
+        themePickerSheet.destroy();
+    }
+    
 } // end of Page

@@ -5,7 +5,7 @@ NavigationPane {
     id: rootNavigationPane
     objectName: "rootNavigationPane"
     DocumentBrowser {
-        
+        id: rootBrowser
     }   
     attachedObjects: [
         ComponentDefinition {
@@ -15,6 +15,10 @@ NavigationPane {
         ComponentDefinition {
             id: documentBrowserPageDef
             source: "DocumentBrowser.qml"
+        },
+        ComponentDefinition {
+            id: themePickerSheetDef
+            source: "ThemePickerSheet.qml"
         },
         SystemDialog {
             id: deleteConfirmationDialog
@@ -28,6 +32,9 @@ NavigationPane {
     ]
     
     onCreationCompleted: {
+        if (themeManager.currentThemeName() != themeManager.defaultThemeName() ) {
+            rootBrowser.applyCustomTheme( themeManager.currentTheme() );
+        }
         // disable js logging
 //        console.log = function() {}        
     }

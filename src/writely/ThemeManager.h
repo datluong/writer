@@ -10,8 +10,10 @@
 
 
 #include <QVariantMap>
+#include <QVariantList>
 #include <QString>
 #include <QObject>
+#include <QStringList>
 
 namespace writely {
 
@@ -22,16 +24,23 @@ public:
 	virtual ~ThemeManager();
 
 	Q_INVOKABLE QVariantMap currentTheme();
+	Q_INVOKABLE QString defaultThemeName();
 	Q_INVOKABLE QString currentThemeName();
 	Q_INVOKABLE void setTheme( QString themeName );
-
+	Q_INVOKABLE QVariantList themeList();
 Q_SIGNALS:
 	void themeChanged( QVariantMap newThemeInfo );
 
 private:
 	QString mCurrentThemeName;
+	QStringList mThemeNameList;
+	QVariantMap mThemeDictionary;
 
-	QString defaultThemeName();
+
+	void initializeThemes();
+
+	void saveThemeToSettings( const QString themeName );
+	void loadThemeFromSettings();
 };
 
 } /* namespace writely */
