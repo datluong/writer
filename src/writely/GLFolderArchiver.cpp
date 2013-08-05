@@ -11,9 +11,12 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QDebug>
+#include <QDateTime>
 
 #include "quazip.h"
 #include "quazipfile.h"
+
+#include <utime.h>
 
 namespace writely {
 
@@ -48,8 +51,10 @@ int GLFolderArchiver::zipFolder(const QString &folderName, const QString& saveTo
 
 		qDebug() << "Listing:" << path << ":relativePath:" << relativeName;
 		QuaZipFile zipFile( &archiveFile );
-		bool openStatus = zipFile.open( QIODevice::WriteOnly | QIODevice::Text, QuaZipNewInfo(relativeName));
-		qDebug() << "OpenStatus:" << openStatus;
+		QuaZipNewInfo newInfo(relativeName);
+		newInfo.setFileDateTime(path); // perverse timestamp value
+
+		bool openStatus = zipFile.open( QIODevice::WriteOnly | QIODevice::Text, newInfo);
 		if (openStatus) {
 			QFile file(path);
 			file.open(QIODevice::ReadOnly | QIODevice::Text);
@@ -116,19 +121,32 @@ void GLFolderArchiver::unarchiveTxtFiles( const QString& archiveFilePath, const 
 
 		// read from zip File
 		QuaZipFile zipFile( &archive );
+//		qDebug() << "zipFileInfo:name" << zipFileInfo.name << "time:" << zipFileInfo.dateTime;
+
 		archive.setCurrentFile( filePath );
+
+		QuaZipFileInfo zipFileInfo;
+		archive.getCurrentFileInfo( &zipFileInfo );
+
+		// read from source
 		if ( !zipFile.open(QIODevice::ReadOnly) )
 			continue;
 		QByteArray content = zipFile.readAll();
 		zipFile.close();
 
+		// write to destination file
 		QFile outFile( fullFilePath );
 		if ( !outFile.open( QIODevice::WriteOnly | QIODevice::Text) ) {
 			continue;
 		}
-
 		outFile.write( content );
 		outFile.close();
+
+		// update timestamp
+		int ts = zipFileInfo.dateTime.toMSecsSinceEpoch() / 1000L;
+		struct utimbuf modTime;
+		modTime.modtime = ts;
+		int utimeStatus = utime( fullFilePath.toLocal8Bit(), &modTime );
 	}
 }
 
