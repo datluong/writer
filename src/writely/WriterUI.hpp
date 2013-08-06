@@ -11,6 +11,8 @@
 #include <bb/cascades/Page>
 #include <bb/cascades/UIOrientation>
 
+#include <bb/system/InvokeManager>
+#include <bb/system/InvokeRequest>
 #include <bb/system/InvokeQueryTargetsReply>
 #include <bb/system/SystemToast>
 
@@ -67,6 +69,8 @@ public:
     Q_INVOKABLE void actionBackup();
     Q_INVOKABLE void actionRestore();
 
+    Q_INVOKABLE QVariantMap invokeOptions();
+
 private:
     NavigationPane* mRootNavigationPane;
     QVariantMap mEmbeddedData;
@@ -75,6 +79,7 @@ private:
     bool mIsThumbnail;
     QSize* mDisplaySize;
     ThemeManager* mThemeManager;
+    InvokeManager*  mInvokeManager;
 
     QString untitledFilePath(const QString& path, int counter);
     QString genFolderPath(QString path, int counter, QString defaultName = QString("Untitled Folder") );
@@ -98,6 +103,8 @@ private:
     int displayWidth(UIOrientation::Type type);
 
 private slots:
+	void handleInvoke(const bb::system::InvokeRequest& request);
+
 	void onAppAboutToQuit();
 	void onAutosaveTimerTimeout();
 	void onAppThumbnailed();

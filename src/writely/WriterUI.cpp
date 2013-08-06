@@ -43,11 +43,25 @@ WriterUI::WriterUI(bb::cascades::Application *app)
 : QObject(app)
 {
 	// private vars initialization
-	mEmbeddedData = QVariantMap();
-	_queryResults = NULL;
-	mToast        = NULL;
-	mIsThumbnail  = false;
-	mDisplaySize  = NULL;
+	mEmbeddedData       = QVariantMap();
+	_queryResults       = NULL;
+	mToast              = NULL;
+	mIsThumbnail        = false;
+	mDisplaySize        = NULL;
+	mRootNavigationPane = NULL;
+
+	mInvokeManager = new InvokeManager( this );
+	bool ok = connect(mInvokeManager, SIGNAL(invoked(const bb::system::InvokeRequest&)),
+	                      this, SLOT(handleInvoke(const bb::system::InvokeRequest&)));
+	qDebug() << "invokeManager connect:" << ok;
+	qDebug() << "WriterApp Startup Type:" << mInvokeManager->startupMode();
+	if (mInvokeManager->startupMode() == ApplicationStartupMode::LaunchApplication) {
+		qDebug() << "WriterApp Statup Mode: Launch";
+	}
+	else if (mInvokeManager->startupMode() == ApplicationStartupMode::InvokeApplication) {
+		qDebug() << "WriterApp Statup Mode: Invoke";
+	}
+
 
 	mThemeManager = new ThemeManager();
 	mThemeManager->setParent( this );
@@ -59,23 +73,88 @@ WriterUI::WriterUI(bb::cascades::Application *app)
 
     // create scene document from main.qml asset
     // set parent to created document to ensure it exists for the whole application lifetime
-    QmlDocument *qml = QmlDocument::create("asset:///main.qml").parent(this);
-    qml->setContextProperty( "writerApp", this);
-    qml->setContextProperty( "themeManager", mThemeManager );
 
-    // create root object for the UI
-    AbstractPane *root = qml->createRootObject<AbstractPane>();
-    // set created root object as a scene
-    app->setScene(root);
+	if (mInvokeManager->startupMode() == ApplicationStartupMode::LaunchApplication) {
+		QmlDocument *qml = QmlDocument::create("asset:///main.qml").parent(this);
+		qml->setContextProperty( "writerApp", this);
+		qml->setContextProperty( "themeManager", mThemeManager );
 
-    mRootNavigationPane = dynamic_cast<NavigationPane*>(root);
-    qDebug() << "rootPane" << (mRootNavigationPane!=NULL);
+		// create root object for the UI
+		AbstractPane *root = qml->createRootObject<AbstractPane>();
+		// set created root object as a scene
+		app->setScene(root);
+		mRootNavigationPane = dynamic_cast<NavigationPane*>(root);
+	}
 
     connect( app, SIGNAL(aboutToQuit()), this, SLOT(onAppAboutToQuit()) );
     connect( app, SIGNAL(thumbnail()),   this, SLOT(onAppThumbnailed()) );
     connect( app, SIGNAL(fullscreen()),  this, SLOT(onAppFullscreen()) );
 
     initializeAutosave();
+}
+
+/**
+ * This method is queried by QML modules.
+ * Return the information about the invoke request.
+ */
+QVariantMap WriterUI::invokeOptions() {
+	QVariantMap result;
+	result["action"]   = mEmbeddedData["requestAction"].toString();
+	if ( mEmbeddedData.contains("requestUri") )
+		result["uri"]  = mEmbeddedData["requestUri"].toString();
+	if ( mEmbeddedData.contains("requestData") )
+		result["data"] = mEmbeddedData["requestData"].toString();
+	return result;
+}
+
+void WriterUI::handleInvoke(const InvokeRequest& request) {
+//    // Copy data from incoming invocation request to properties
+//    m_source =
+//            QString::fromLatin1("%1 (%2)").arg(request.source().installId()).arg(
+//                    request.source().groupId());
+//    m_target = request.target();
+//    m_action = request.action();
+//    m_mimeType = request.mimeType();
+//    m_uri = request.uri().toString();
+//    m_data = QString::fromUtf8(request.data());
+
+	qDebug() << "WriterUI::handleInvoke:source" << request.source().installId() << ":groupId:" << request.source().groupId();
+	qDebug() << "WriterUI::handleInvoke:target" << request.target();
+	qDebug() << "WriterUI::handleInvoke:action" << request.action();
+	qDebug() << "WriterUI::handleInvoke:mimeType" << request.mimeType();
+	qDebug() << "WriterUI::handleInvoke:uri" << request.uri();
+	qDebug() << "WriterUI::handleInvoke:data" << request.data();
+
+	mEmbeddedData["requestAction"]   = request.action();
+	mEmbeddedData["requestMimeType"] = request.mimeType();
+	if (!request.uri().isEmpty()) {
+		mEmbeddedData["requestUri"]  = request.uri().toString();
+	}
+	else {
+		// create a new file
+		QVariantMap newFileInfo = createEmptyFile("/");
+		mEmbeddedData["requestUri"] = "file://" + newFileInfo["path"].toString();
+
+		if (!request.data().isEmpty()) {
+			QFile f(newFileInfo["path"].toString());
+			if (f.open(QIODevice::WriteOnly | QIODevice::Text)) {
+				f.write(  request.data() );
+				f.close();
+			}
+		}
+	}
+	//
+	QmlDocument * qml = QmlDocument::create("asset:///mainEditor.qml").parent(this);
+	qml->setContextProperty( "writerApp", this);
+	qml->setContextProperty( "themeManager", mThemeManager );
+
+	// create root object for the UI
+	AbstractPane *root = qml->createRootObject<AbstractPane>();
+	// set created root object as a scene
+	Application::instance()->setScene( root );
+//	app->setScene(root);
+	mRootNavigationPane = dynamic_cast<NavigationPane*>(root);
+	QMetaObject::invokeMethod( mRootNavigationPane, "onRequestInvoked" );
 }
 
 void WriterUI::initializeDocumentFolder() {
@@ -169,6 +248,7 @@ QVariantMap WriterUI::renameFolder( QString relativeFolderPath, QString newName 
 
 /**
  * Create an empty file and return the new path.
+ * @param    documentPath    The relative path from the documentRoot. Must start with "/"
  * @return   empty map if the new document couldn't be created in the specified path
  */
 QVariantMap WriterUI::createEmptyFile( QString documentPath ) {
@@ -360,6 +440,9 @@ bool WriterUI::isFileLoadable(QString filePath) {
 	return file.exists();
 }
 
+/**
+ * @param  filePath  full path to the file
+ */
 QString WriterUI::loadFileContent(QString filePath) {
 	QFile file(filePath);
 	if (!file.exists())
@@ -755,6 +838,7 @@ void dumpMetaObject(const QMetaObject* metaObject) {
  * @return the editor page if it is on the top of navigation stack. Otherwise return 0;
  */
 Page* WriterUI::currentEditorPage() {
+	if (mRootNavigationPane == NULL) return NULL;
 	if (mRootNavigationPane->count() > 0) {
 		Page* page = mRootNavigationPane->at( mRootNavigationPane->count()-1 );
 		if (page) {
@@ -767,6 +851,8 @@ Page* WriterUI::currentEditorPage() {
 }
 
 Page* WriterUI::currentBrowserPage() {
+	if (mRootNavigationPane == NULL) return NULL;
+
 	if (mRootNavigationPane->count() > 0) {
 		Page* page = mRootNavigationPane->at( mRootNavigationPane->count()-1 );
 		if (page) {
@@ -948,7 +1034,8 @@ void WriterUI::unRegisterDocumentInEditing() {
  */
 void WriterUI::onThemeChanged( QVariantMap newThemeInfo ) {
 	Q_UNUSED( newThemeInfo );
-	QMetaObject::invokeMethod( mRootNavigationPane, "applyCustomTheme" );
+	if (mRootNavigationPane )
+		QMetaObject::invokeMethod( mRootNavigationPane, "applyCustomTheme" );
 }
 
 ///////////////////////////////////////////////////////////////////////////////

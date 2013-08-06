@@ -181,6 +181,24 @@ Page {
             onTimeout: {
                 updateWordCountBarVisibility();
             }
+        },
+        ActionItem {
+            id: saveActionItem
+            title: "Save"
+            ActionBar.placement: ActionBarPlacement.OnBar
+            imageSource: "asset:///images/icon-save.png"
+            onTriggered: {
+                saveDocument();
+            }
+        },
+        ActionItem {
+            id: exitActionItem
+            title: "Exit"
+            ActionBar.placement: ActionBarPlacement.OnBar
+            imageSource: "asset:///images/icon-exit.png"
+            onTriggered: {
+                Application.requestExit();
+            }
         }
     ]
     
@@ -415,4 +433,8 @@ Page {
         themePickerSheet.destroy();
     }
 
+    function enableSaveButton() {
+        editorPage.addAction( saveActionItem );
+        editorPage.addAction( exitActionItem );
+    }
 } // end Page
