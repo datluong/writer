@@ -53,13 +53,18 @@ Page {
                 backgroundVisible: false
                 focusHighlightEnabled: false
                 onTextChanged: {
-                    if (documentBrowserInitialized)
+                    if (documentBrowserInitialized) {
                         actionUpdateFolderName();
+                        // hide the virtual keyboard
+                        if (!writerApp.isPhysicalKeyboardDevice())
+                            titleContainer.requestFocus();
+                    }
                 }
             }
             TextField {
-                // this dummy textfield will make titleTextField loses focus on ENTER key 
-                visible: false
+                // this dummy textfield will make titleTextField loses focus on ENTER key
+                id: assistTextField                
+                visible: false                
             }
         } // end Title Container
         Container {
@@ -73,7 +78,7 @@ Page {
 
         Container {
             id: folderEmptyContainer
-            visible: false            
+            visible: false  
             horizontalAlignment: HorizontalAlignment.Fill
             topPadding: 32
             Label {
