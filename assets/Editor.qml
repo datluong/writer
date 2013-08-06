@@ -31,7 +31,6 @@ Page {
                 layout: StackLayout {}
                 Container {
                     id: editorTitleContainer
-//                    background: Color.Red
                     leftPadding: 24
                     rightPadding: 24
                     topPadding: 36
@@ -411,6 +410,13 @@ Page {
 
     function applyCustomTheme(themeInfo) {
         if (themeInfo.name == 'Light') { //default theme
+            rootContainer.resetBackground();
+            editorContainer.resetBackground();
+            titleTextArea.textStyle.resetColor();
+            editorTextArea.textStyle.resetColor();
+            controllerInnerContainer.background = Color.create(0, 0, 0, 0.6);
+            wordCountLabel.textStyle.color = Color.White;
+            wordCountIcon.imageSource = "asset:///images/dots.png";
             return;
         }
         
