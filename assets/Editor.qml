@@ -163,6 +163,8 @@ Page {
         attachedObjects: [
             LayoutUpdateHandler {
                 onLayoutFrameChanged: {
+                    console.log('[editor-RootContainer]onLayoutFrameChanged', layoutFrame.width, layoutFrame.height);
+                    textStyleDialog.updatePrefSize( layoutFrame.width, layoutFrame.height );
                     if (!compactWordCountView) {
                         var isVirtualKbShown = writerApp.determineVirtualKeyboardShown(layoutFrame.width, layoutFrame.height);
                         wordCountBar.opacity = isVirtualKbShown ? 0:1;
@@ -199,6 +201,16 @@ Page {
             onTriggered: {
                 Application.requestExit();
             }
+        },
+        TextStyleDialog {
+            id: textStyleDialog
+            onFontSizeImmediateValueChanged: {
+                var roundedSize = textStyleDialog.fontSizeImmediateValue;
+                if (editorTextArea.textStyle.fontSizeValue != roundedSize) {
+                    console.log('update -> ', roundedSize);
+                    editorTextArea.textStyle.fontSizeValue = roundedSize;
+                }
+            }
         }
     ]
     
@@ -233,6 +245,14 @@ Page {
             imageSource: "asset:///images/icon-themes.png"
             onTriggered: {
                 actionPickTheme();
+            }
+        },
+        ActionItem {
+            title: "Font Size"
+            ActionBar.placement: ActionBarPlacement.InOverflow
+            imageSource: "asset:///images/icon-font-size.png"
+            onTriggered: {
+                textStyleDialog.open();
             }
         }
     ]

@@ -39,6 +39,8 @@ using namespace bb::cascades::pickers;
 
 namespace writely {
 
+QString WriterUI::appName() { return kGLAppName; }
+
 WriterUI::WriterUI(bb::cascades::Application *app)
 : QObject(app)
 {
@@ -1142,4 +1144,25 @@ void WriterUI::onRestoreConfirmationDialogFinished(bb::system::SystemUiResult::T
 // End of Backup/Restore
 ///////////////////////////////////////////////////////////////////////////////
 
+///////////////////////////////////////////////////////////////////////////////
+// Settings
+///////////////////////////////////////////////////////////////////////////////
+
+float WriterUI::editorFontSize() {
+	QSettings settings(kGLCompanyName, kGLAppName);
+	if (settings.contains( "fontSize") )
+		return settings.value( "fontSize").toFloat();
+	else
+		return 7;
+
+}
+void  WriterUI::setEditorFontSize( float size ) {
+	qDebug() << "WriterUI::setEditorFontSize:" << size;
+	QSettings settings(kGLCompanyName, kGLAppName);
+	settings.setValue("fontSize", size);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// End of Settings
+///////////////////////////////////////////////////////////////////////////////
 } // end namespace

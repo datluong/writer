@@ -36,7 +36,7 @@ class WriterUI : public QObject
 public:
     WriterUI(bb::cascades::Application *app);
     virtual ~WriterUI() {}
-
+    Q_INVOKABLE QString appName();
     Q_INVOKABLE QVariantList listDirectory(QString path);
     Q_INVOKABLE bool isFileLoadable(QString filePath);
     Q_INVOKABLE QString loadFileContent(QString filePath);
@@ -71,6 +71,9 @@ public:
 
     Q_INVOKABLE QVariantMap invokeOptions();
 
+    Q_INVOKABLE float editorFontSize();
+    Q_INVOKABLE void  setEditorFontSize( float size );
+
 private:
     NavigationPane* mRootNavigationPane;
     QVariantMap mEmbeddedData;
@@ -101,6 +104,7 @@ private:
     // orientation
     UIOrientation::Type currentOrientation();
     int displayWidth(UIOrientation::Type type);
+
 
 private slots:
 	void handleInvoke(const bb::system::InvokeRequest& request);

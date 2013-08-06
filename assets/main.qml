@@ -32,7 +32,7 @@ NavigationPane {
         SystemToast {
             id: mainMessageToast
             body: ""
-        }  
+        }
     ]
     
     onCreationCompleted: {
