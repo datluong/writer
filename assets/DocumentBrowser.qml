@@ -168,10 +168,7 @@ Page {
                             ActionSet {
                                 id: documentActionSet
                                 title: ListItemData.name
-                                subtitle: ( ListItemData.type == 'folder' ? 'Folder' : '');
-                                ActionItem {
-                                    title: "Sample Action"   
-                                }
+                                subtitle: ( ListItemData.type == 'folder' ? 'Folder' : '');                                
                                 DeleteActionItem {
                                     title: "Delete"
                                     onTriggered: {
@@ -243,14 +240,21 @@ Page {
             onSelectionChanged: {
                 console.log('selectionChanged -> ', indexPath, 'selectionLength', selectionList().length);
                 var itemSelected = selectionList().length;
+                var stat = statsForSelectedIndexes();
                 if (itemSelected == 0) {
                     multiSelectHandler.status = 'None selected';
                 }  
-                else if (itemSelected == 1) {
-                    multiSelectHandler.status = '1 document selected';
+                else if (itemSelected == 1) {                    
+                    multiSelectHandler.status = (stat.documents > 0 ? '1 document selected' : '1 folder selected');
                 }
                 else {
-                    multiSelectHandler.status = '' + itemSelected + ' documents selected';
+                    var type = 'documents';
+                    if ( stat.folders > 0 && stat.documents > 0) 
+                        type = 'items';
+                    if ( stat.documents == 0 )
+                        type = 'folders';
+                        
+                    multiSelectHandler.status = '' + itemSelected + ' ' + type + ' selected';
                 }
             }
             onTriggered: {
@@ -264,11 +268,42 @@ Page {
                     actionOpenFolder( entry, {} );
                 }
             }
+            
+            /**
+             * @return a list of indexPath when the list is in multi-select mode
+             */
+            function selectedIndexPaths() {
+                var list = [];
+                var selection = selectionList();
+                for (var i = 0; i < selection.length; i ++) {
+                    if (selection[i].length > 0) list.push(selection[i][0]);
+                }
+                return list;
+            }
+            
+            /**
+             * Count the number of selected folders and documents when the list is in multi-select mode 
+             */
+            function statsForSelectedIndexes() {
+                var indexes = selectedIndexPaths();
+                var documentCount = 0;
+                var folderCount = 0;
+                for (var i = 0; i < indexes.length; i++) {
+                    var entry = fileModels.value( indexes[i] );
+                    if (entry.type == 'folder') 
+                        folderCount++;
+                    else documentCount ++;
+                }
+                return { 
+                    documents: documentCount,
+                    folders: folderCount
+                }
+            }
 
             function actionDeleteSelectedItems() {
                 console.log('actionDeleteSelectedItems');
                 var selection = selectionList();
-                deleteConfirmationDialog.body = 'Delete ' + selection.length + ' selected document' + (selection.length>1?'s':'') + '?';
+                deleteConfirmationDialog.body = 'Delete ' + selection.length + ' selected item' + (selection.length>1?'s':'') + '?';
                 deleteConfirmationDialog.exec();
                 var status = deleteConfirmationDialog.result;
                 if (status == SystemUiResult.ConfirmButtonSelection) {
@@ -286,7 +321,8 @@ Page {
                             if (indexPath > fileModels.size()) continue;
                             var entry = fileModels.value( indexPath );
                             if (entry.type == 'folder') {
-                                //TODO delete
+                                if (writerApp.deleteFolder(entry.path))
+                                    fileModels.removeAt(indexPath);
                             }
                             else if (entry.type == 'file') {
                                 if (writerApp.deleteFile(entry.path)) 
