@@ -73,7 +73,8 @@ public:
 
     Q_INVOKABLE float editorFontSize();
     Q_INVOKABLE void  setEditorFontSize( float size );
-
+    Q_INVOKABLE QString browserSortType();
+    Q_INVOKABLE void  setBrowserSortType(QString sortType);
 private:
     NavigationPane* mRootNavigationPane;
     QVariantMap mEmbeddedData;

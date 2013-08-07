@@ -9,6 +9,7 @@ Page {
     objectName: "documentBrowserPage"
     // the path for browsing. Path must start with '/', with root path is '/'
     // format: /[..]/[..]
+    property bool initialized_: false;
     property string documentPath: '/';
     property bool   documentBrowserInitialized: false;
     property string themeRowTextColor: '';
@@ -75,7 +76,32 @@ Page {
             preferredHeight: 2
         }
         //
-
+        Container {
+            id: sortOptionContainer
+            topPadding: 12
+            bottomPadding: 8
+            visible: false
+            DropDown {
+                id: sortTypeDropdown
+                title: "Sort"
+                Option {
+                    text: "Name"
+                    value: "name"
+                }
+                Option {
+                    text: "Modified Date"
+                    value: "modifiedDate"
+                }
+                onSelectedValueChanged: {
+                    console.log('[sortTypeDropdown]selectedValueChanged -> ', selectedValue);
+                    if (initialized_) {
+                        writerApp.setBrowserSortType( selectedValue );
+                        reloadDirectory();
+                    }
+                    sortOptionContainer.visible = false;
+                }
+            }
+        }
         Container {
             id: folderEmptyContainer
             visible: false  
@@ -428,6 +454,14 @@ Page {
             }
         },
         ActionItem {
+            title: "Sort"
+            ActionBar.placement: ActionBarPlacement.InOverflow
+            imageSource: "asset:///images/icon-sort.png"
+            onTriggered: {
+                sortOptionContainer.visible = true;
+            }
+        },
+        ActionItem {
             title: "Theme"
             ActionBar.placement: ActionBarPlacement.InOverflow
             imageSource: "asset:///images/icon-themes.png"
@@ -468,7 +502,11 @@ Page {
         if (lastEditedDocumentInfo.hasOwnProperty('path')) {
             actionOpenFile( lastEditedDocumentInfo, {focusEditor:true});   
         }
-                         
+              
+        // update sort type
+        var sortType = writerApp.browserSortType();
+        sortTypeDropdown.setSelectedIndex( sortType == 'name' ? 0 : 1 );
+        initialized_ =  true;
     }
     
     function disableRenaming() {
@@ -589,6 +627,7 @@ Page {
      * {event_handler}
      */ 
     function onDocumentUpdated( path ) {
+        
         for (var i = 0 ; i < fileModels.size(); i++) {
             var entry = fileModels.value(i);
             if (entry.path == path) {
@@ -596,9 +635,25 @@ Page {
                 if (updatedEntry.hasOwnProperty('path')) {
                     var measure = TimeAssist.measureDistance( updatedEntry.modified );
                     updatedEntry.description = measure.description;
-                    updatedEntry.nextRefresh = measure.nextRefresh;                
+                    updatedEntry.nextRefresh = measure.nextRefresh;
+                                                        
                     fileModels.replace(i, updatedEntry);
+                    
+                    // if the index of the item changed, move it up                    
+                    if (writerApp.browserSortType() != 'name') {
+                        var newPos = -1;
+                        var itemData = writerApp.listDirectory(documentPath);
+                        for (var j = 0; j < itemData.length; j++)
+                            if (itemData[j].path == updatedEntry.path) {
+                                newPos = j; break;
+                            }
+                        if (newPos != -1 && newPos != i) {
+                            fileModels.move(i, newPos);           
+                        }
+                    }
                 }
+                
+                break;
             }
         }
     }

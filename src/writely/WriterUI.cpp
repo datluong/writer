@@ -349,7 +349,9 @@ QVariantList WriterUI::listDirectory(QString path) {
 	if (!dir.exists())
 		return docList;
 
-	QFileInfoList infoList = dir.entryInfoList( QDir::NoFilter, QDir::DirsFirst | QDir::Name  | QDir::IgnoreCase );
+	QDir::SortFlags flag = ( browserSortType() == "name") ? QDir::Name : QDir::Time;
+
+	QFileInfoList infoList = dir.entryInfoList( QDir::NoFilter, QDir::DirsFirst | flag  | QDir::IgnoreCase );
 	foreach (QFileInfo fileInfo, infoList) {
 //		qDebug() << "entry:name" << fileInfo.fileName() << "path:" << fileInfo.filePath() << "isDir:" << fileInfo.isDir() << "isFile:" << fileInfo.isFile();
 		if ( fileInfo.fileName() == "." || fileInfo.fileName() == ".." ) continue;
@@ -1160,6 +1162,21 @@ void  WriterUI::setEditorFontSize( float size ) {
 	qDebug() << "WriterUI::setEditorFontSize:" << size;
 	QSettings settings(kGLCompanyName, kGLAppName);
 	settings.setValue("fontSize", size);
+}
+
+QString WriterUI::browserSortType() {
+	QSettings settings(kGLCompanyName, kGLAppName);
+	if ( settings.contains("sortType") ) {
+		return settings.value("sortType").toString();
+	}
+	return "name";
+}
+void WriterUI::setBrowserSortType(QString sortType) {
+	if (sortType == "name" || sortType == "modifiedDate") {
+		qDebug() << "WriterUI::setBrowserSortType:" << sortType;
+		QSettings settings(kGLCompanyName, kGLAppName);
+		settings.setValue("sortType", sortType);
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
