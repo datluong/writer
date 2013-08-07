@@ -1,6 +1,8 @@
 import bb.cascades 1.0
 import my.timer 1.0
 
+import 'js/wordcounter.js' as WordCounter
+
 Page {
     id: editorPage
     objectName: "editorPage"
@@ -262,11 +264,7 @@ Page {
     }
     
     function wordCount(text) {
-        var regex = /\s+/gi;
-        var norm = text.replace(regex, ' ').replace(/^\s+/i, '').replace(/\s+$/i, '');
-        if (norm.length === 0) return 0;
-        var count =  norm.split(' ').length;
-        return count;
+        return WordCounter.wordCount(text);
     }
     
     onCreationCompleted: {        
