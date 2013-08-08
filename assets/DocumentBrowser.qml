@@ -194,7 +194,15 @@ Page {
                             ActionSet {
                                 id: documentActionSet
                                 title: ListItemData.name
-                                subtitle: ( ListItemData.type == 'folder' ? 'Folder' : '');                                
+                                subtitle: ( ListItemData.type == 'folder' ? 'Folder' : ''); 
+                                ActionItem {
+                                    title: "Share"
+                                    enabled: ( ListItemData.type != 'folder' )
+                                    imageSource: "asset:///images/ic_share.png"
+                                    onTriggered: {
+                                        fileComponent.ListItem.view.actionShareListItem(fileComponent.ListItem.indexPath);
+                                    }
+                                }
                                 DeleteActionItem {
                                     title: "Delete"
                                     onTriggered: {
@@ -330,6 +338,7 @@ Page {
                 console.log('actionDeleteSelectedItems');
                 var selection = selectionList();
                 deleteConfirmationDialog.body = 'Delete ' + selection.length + ' selected item' + (selection.length>1?'s':'') + '?';
+                var successMessage = '' + selection.length + ' item' + (selection.length > 1 ? 's' : '') + ' deleted';
                 deleteConfirmationDialog.exec();
                 var status = deleteConfirmationDialog.result;
                 if (status == SystemUiResult.ConfirmButtonSelection) {
@@ -358,6 +367,20 @@ Page {
                     }
                 }
                 updateFolderEmptyIndicator();
+
+                showMessageToast( successMessage );
+            }
+            
+            function actionShareListItem( indexPath ) {
+                console.log('actionShareListItem:indexPath', indexPath);
+                if ( indexPath >= fileModels.size() ) return;
+                
+                var entry = fileModels.value( indexPath );
+                if ( entry.type != 'file') return;
+                if ( !writerApp.isFileLoadable( entry.path ) ) return;
+                
+                var content = writerApp.loadFileContent( entry.path );
+                writerApp.actionShareDocumentAsAttachment( entry.name, content );
             }
             
             function actionDeleteListItem( indexPath) {

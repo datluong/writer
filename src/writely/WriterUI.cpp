@@ -22,7 +22,7 @@
 #include <bb/system/InvokeQueryTargetsReply>
 #include <bb/system/InvokeReplyError>
 #include <bb/system/SystemDialog>
-
+#include <bb/ApplicationInfo>
 
 #include <QDir>
 #include <QFileInfoList>
@@ -40,6 +40,33 @@ using namespace bb::cascades::pickers;
 namespace writely {
 
 QString WriterUI::appName() { return kGLAppName; }
+QString WriterUI::appVersion() {
+    bb::ApplicationInfo appInfo;
+    return appInfo.version();
+}
+void WriterUI::actionSendFeedback() {
+    InvokeManager invokeManager;
+    InvokeRequest request;
+    request.setTarget("sys.pim.uib.email.hybridcomposer");
+    request.setAction("bb.action.SENDEMAIL");
+    request.setMimeType("text/plain");
+    QUrl uri("mailto:support@glamdevelopment.com");
+    uri.addQueryItem("subject", "Feedback for Writer");
+    request.setUri(uri);
+
+    invokeManager.invoke(request);
+}
+
+void WriterUI::actionOpenBBW(QString appId) {
+    InvokeManager invokeManager;
+    InvokeRequest request;
+    request.setTarget("sys.appworld");
+    request.setAction("bb.action.OPEN");
+    QUrl uri( QString("appworld://content/%1").arg(appId) );
+    request.setUri(uri);
+
+    invokeManager.invoke(request);
+}
 
 WriterUI::WriterUI(bb::cascades::Application *app)
 : QObject(app)
@@ -71,6 +98,8 @@ WriterUI::WriterUI(bb::cascades::Application *app)
 
 	// filesystem initialization
 	initializeDocumentFolder();
+	welcomeOnFirstTime();
+
 	qmlRegisterType<QTimer>("my.timer", 1, 0, "QTimer");
 
     // create scene document from main.qml asset
@@ -164,6 +193,17 @@ void WriterUI::initializeDocumentFolder() {
 	QDir dir(documentsPath);
 	if (!dir.exists())
 		dir.mkpath(documentsPath);
+}
+
+void WriterUI::welcomeOnFirstTime() {
+	if (!isWelcomeFileShown()) {
+		setWelcomeFileShown();
+		QFile sourceFile( QDir::currentPath() + "/app/native/assets/text/Welcome!.txt");
+		if (!sourceFile.exists()) return;
+
+		QString welcomeFileName = documentsFolderPath() + "/Welcome!.txt";
+		sourceFile.copy( welcomeFileName );
+	}
 }
 
 /**
@@ -1177,6 +1217,16 @@ void WriterUI::setBrowserSortType(QString sortType) {
 		QSettings settings(kGLCompanyName, kGLAppName);
 		settings.setValue("sortType", sortType);
 	}
+}
+
+bool WriterUI::isWelcomeFileShown() {
+	QSettings settings(kGLCompanyName, kGLAppName);
+	return settings.contains("welcome");
+}
+
+void WriterUI::setWelcomeFileShown() {
+	QSettings settings(kGLCompanyName, kGLAppName);
+	settings.setValue("welcome", true);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

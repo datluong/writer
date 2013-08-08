@@ -4,6 +4,27 @@ import bb.system 1.0
 NavigationPane {
     id: rootNavigationPane
     objectName: "rootNavigationPane"
+    property variant aboutSheet;
+    
+    Menu.definition: MenuDefinition {
+        actions: [
+            ActionItem {
+                title: "About"
+                imageSource: "asset:///images/ic_info.png"
+                onTriggered: {
+                    aboutSheet = aboutSheetDef.createObject();
+                    aboutSheet.closed.connect(onAboutSheetClosed);
+                    aboutSheet.open();
+                }
+                attachedObjects: [
+                    ComponentDefinition {
+                        id: aboutSheetDef
+                        source: "About.qml"
+                    }
+                ]
+            }
+        ]
+    } // end of Menu Definition
     DocumentBrowser {
         id: rootBrowser
     }   
@@ -105,6 +126,10 @@ NavigationPane {
             }
         }
     }
-    
+
+    function onAboutSheetClosed() {
+        aboutSheet.destroy();
+    }
+
 } // end of NavigationPane
     

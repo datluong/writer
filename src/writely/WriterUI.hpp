@@ -37,6 +37,10 @@ public:
     WriterUI(bb::cascades::Application *app);
     virtual ~WriterUI() {}
     Q_INVOKABLE QString appName();
+    Q_INVOKABLE QString appVersion();
+    Q_INVOKABLE void actionSendFeedback();
+    Q_INVOKABLE void actionOpenBBW(QString appId);
+
     Q_INVOKABLE QVariantList listDirectory(QString path);
     Q_INVOKABLE bool isFileLoadable(QString filePath);
     Q_INVOKABLE QString loadFileContent(QString filePath);
@@ -106,6 +110,10 @@ private:
     UIOrientation::Type currentOrientation();
     int displayWidth(UIOrientation::Type type);
 
+    // settings
+    bool isWelcomeFileShown();
+    void setWelcomeFileShown();
+    void welcomeOnFirstTime();
 
 private slots:
 	void handleInvoke(const bb::system::InvokeRequest& request);

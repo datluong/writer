@@ -1,0 +1,9 @@
+Welcome to Writer! We hope you'll this app as much as we do.
+
+Writer gives you a clean, full-screen, distraction free enviroment to write. We made it as easy as possible for you to write anywhere, anytime.
+
+To view the menu, just tap the Word Count bar, which is located at the bottom right of your writing screen. You can easily share, or customize your writing environment with many color themes that are available with Writer.
+
+Writer's autosaving ensures your writings are always safe. Word Count helps you track your progress. With Writer's distraction-free environment, we hope you can stay focused and find writing more pleasurable.
+
+We'd love to hear your feedback, bug reports or suggestions. You can reach us at support@glamdevelopment.com. We're always happy to help our users and receive their comments!
