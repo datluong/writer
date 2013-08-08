@@ -45,7 +45,7 @@ NavigationPane {
         rootEditor.enableSaveButton();
         
         // disable js logging
-        //        console.log = function() {}
+                console.log = function() {}
     }
     
     /**

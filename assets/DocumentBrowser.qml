@@ -12,6 +12,7 @@ Page {
     property bool initialized_: false;
     property string documentPath: '/';
     property bool   documentBrowserInitialized: false;
+    property bool   allowTitleUpdateHandling: true;
     property string themeRowTextColor: '';
     property string rowDividerColor: '';
     property string rowHighlightColor: '';
@@ -54,7 +55,7 @@ Page {
                 backgroundVisible: false
                 focusHighlightEnabled: false
                 onTextChanged: {
-                    if (documentBrowserInitialized) {
+                    if (documentBrowserInitialized && allowTitleUpdateHandling) {
                         actionUpdateFolderName();
                         // hide the virtual keyboard
                         if (!writerApp.isPhysicalKeyboardDevice())
@@ -635,6 +636,7 @@ Page {
      * Bind documentPath to title field
      **/
     function updateTitle() {
+        allowTitleUpdateHandling = false;
         var comps = documentPath.split('/');
         if (comps.length > 0) {
             var name = comps[ comps.length - 1 ];
@@ -642,6 +644,7 @@ Page {
                 titleTextField.text = name;
             }
         }
+        allowTitleUpdateHandling = true;
     }
 
     function actionOpenFolder( folderInfo, options ) {
@@ -814,7 +817,7 @@ Page {
             if (entry.hasOwnProperty('name')) {
                 documentPath = entry.relativePath;
                 updateTitle();
-                folderNameChanged();
+                folderNameChanged(); // signal to parent folder
             }
             else {
                 //fail

@@ -62,7 +62,7 @@ NavigationPane {
             rootBrowser.applyCustomTheme( themeManager.currentTheme() );
         }
         // disable js logging
-//        console.log = function() {}        
+        console.log = function() {}        
     }
     
     function experimentZone() {        
