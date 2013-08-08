@@ -73,6 +73,7 @@ WriterUI::WriterUI(bb::cascades::Application *app)
 {
 	// private vars initialization
 	mEmbeddedData       = QVariantMap();
+	mBrowserClipboard   = QVariantMap();
 	_queryResults       = NULL;
 	mToast              = NULL;
 	mIsThumbnail        = false;
@@ -1184,6 +1185,94 @@ void WriterUI::onRestoreConfirmationDialogFinished(bb::system::SystemUiResult::T
 
 ///////////////////////////////////////////////////////////////////////////////
 // End of Backup/Restore
+///////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+// Clipboard Section
+///////////////////////////////////////////////////////////////////////////////
+
+void WriterUI::registerClipboard( QString relativePath, QStringList fileList ) {
+	qDebug() << "WriterUI::registerClipboard:path" << relativePath << ":list:" << fileList;
+	mBrowserClipboard["path"] = relativePath;
+	mBrowserClipboard["list"] = fileList;
+
+	broadcastClipboardChanged();
+}
+
+void WriterUI::clearClipboard() {
+	mBrowserClipboard.clear();
+	broadcastClipboardChanged();
+}
+
+bool WriterUI::isClipboardEmpty() {
+
+	return mBrowserClipboard.isEmpty();
+}
+
+void WriterUI::broadcastClipboardChanged() {
+	if (mRootNavigationPane)
+		QMetaObject::invokeMethod(mRootNavigationPane, "onClipboardChanged" );
+}
+
+QString WriterUI::clipboardRelativePath() {
+	if (mBrowserClipboard.contains("path"))
+		return mBrowserClipboard["path"].toString();
+	return "";
+}
+
+QString WriterUI::clipboardDescription() {
+	if (mBrowserClipboard.contains("list")) {
+		int count = mBrowserClipboard["list"].toStringList().count();
+		if (count < 2)
+			return QString("%1 item selected").arg(count);
+		else
+			return QString("%1 items selected").arg(count);
+	}
+	return "0 item selected";
+}
+
+/**
+ * Move documents
+ */
+void WriterUI::moveToFolder( QString relativePath ) {
+    qDebug() << "WriteUI::moveToFolder:" << relativePath;
+    int count = 0;
+    if (mBrowserClipboard.contains("path") && mBrowserClipboard.contains("list")) {
+    	QString sourceRelativePath = mBrowserClipboard["path"].toString();
+    	if (sourceRelativePath != relativePath) {
+    		// move files to new folder
+    		QStringList movedFiles = mBrowserClipboard["list"].toStringList();
+    		for (int i = 0 ; i < movedFiles.size();i++) {
+    			QString filePath = movedFiles[i];
+    			QFileInfo fileInfo(filePath);
+    			if ( !fileInfo.exists() ) continue;
+    			QString newFilePath = documentsFolderPath() + relativePath + "/" + fileInfo.fileName();
+    			bool status = false;
+    			if (fileInfo.isFile()) {
+    				QFile f(filePath);
+    				status = f.rename( newFilePath );
+    			}
+    			else {
+    				QDir f(filePath);
+    				status = f.rename( filePath, newFilePath );
+    			}
+    			if (status) count++;
+    			qDebug() << "WriterUI::moveFile" << filePath << " -> " << newFilePath << ":status:" << status;
+    		}
+    	}
+    }
+
+    clearClipboard();
+
+    if (mRootNavigationPane)
+    	QMetaObject::invokeMethod(mRootNavigationPane, "onFilesMoved" );
+
+    QString message = QString("%1 item%2 moved").arg( QString::number(count), QString(count<=1?"":"s") );
+    showToasts( message );
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// End of Clipboard Section
 ///////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////

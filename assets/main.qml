@@ -130,6 +130,29 @@ NavigationPane {
     function onAboutSheetClosed() {
         aboutSheet.destroy();
     }
+    
+    /**
+     * Broadcast updateFileMover request to all browsers in respond to clipBoard changed event
+     */
+    function onClipboardChanged() {
+        for (var i = 0 ; i < rootNavigationPane.count(); i++) {
+            var thePage = rootNavigationPane.at(i);
+            if (thePage.hasOwnProperty('glMetaData')) {
+                var meta = thePage.glMetaData();
+                if (meta.pageType == 'documentBrowser') thePage.updateFileMover();
+            }
+        }
+    }
+    
+    function onFilesMoved() {
+        for (var i = 0; i < rootNavigationPane.count(); i ++) {
+            var thePage = rootNavigationPane.at(i);
+            if (thePage.hasOwnProperty('glMetaData')) {
+                var meta = thePage.glMetaData();
+                if (meta.pageType == 'documentBrowser') thePage.reloadDirectory();
+            }
+        }
+    }
 
 } // end of NavigationPane
     

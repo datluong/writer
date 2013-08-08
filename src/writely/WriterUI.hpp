@@ -6,6 +6,7 @@
 #include <QVariant>
 #include <QVariantList>
 #include <QSize>
+#include <QStringList>
 
 #include <bb/cascades/NavigationPane>
 #include <bb/cascades/Page>
@@ -40,6 +41,13 @@ public:
     Q_INVOKABLE QString appVersion();
     Q_INVOKABLE void actionSendFeedback();
     Q_INVOKABLE void actionOpenBBW(QString appId);
+
+    Q_INVOKABLE void registerClipboard( QString relativePath, QStringList fileList );
+    Q_INVOKABLE void clearClipboard();
+    Q_INVOKABLE bool isClipboardEmpty();
+    Q_INVOKABLE QString clipboardRelativePath();
+    Q_INVOKABLE QString clipboardDescription();
+    Q_INVOKABLE void moveToFolder( QString relativePath );
 
     Q_INVOKABLE QVariantList listDirectory(QString path);
     Q_INVOKABLE bool isFileLoadable(QString filePath);
@@ -82,6 +90,7 @@ public:
 private:
     NavigationPane* mRootNavigationPane;
     QVariantMap mEmbeddedData;
+    QVariantMap mBrowserClipboard;
     InvokeQueryTargetsReply * _queryResults;
     bb::system::SystemToast* mToast;
     bool mIsThumbnail;
@@ -114,6 +123,8 @@ private:
     bool isWelcomeFileShown();
     void setWelcomeFileShown();
     void welcomeOnFirstTime();
+
+    void broadcastClipboardChanged();
 
 private slots:
 	void handleInvoke(const bb::system::InvokeRequest& request);

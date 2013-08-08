@@ -102,6 +102,51 @@ Page {
                 }
             }
         }
+        // move controller
+        Container {
+            id: fileMoverContainer
+            horizontalAlignment: HorizontalAlignment.Fill
+            topPadding: 8           
+            visible: false
+            Container {
+                horizontalAlignment: HorizontalAlignment.Fill
+                layout: DockLayout {}
+                Button {
+                    text: "Cancel"
+                    horizontalAlignment: HorizontalAlignment.Left
+                    verticalAlignment: VerticalAlignment.Center
+                    preferredWidth: 120
+                    onClicked: {
+                        writerApp.clearClipboard();
+                    }
+                    
+                }
+                Label {
+                    id: moveDescriptionLabel
+                    text: "0 item selected"
+                    horizontalAlignment: HorizontalAlignment.Center
+                    verticalAlignment: VerticalAlignment.Center
+                }
+                Button {
+                    text: "Move"
+                    id: moveButton
+                    horizontalAlignment: HorizontalAlignment.Right
+                    verticalAlignment: VerticalAlignment.Center
+                    preferredWidth: 120
+                    onClicked: {
+                        writerApp.moveToFolder( documentPath );
+                    }
+                }
+            }
+            Container { //divider
+                topMargin: 8
+                bottomMargin: 0
+                preferredHeight: 2
+                horizontalAlignment: HorizontalAlignment.Fill                
+                background: documentListView.themedDividerColor();
+            }
+
+        }
         Container {
             id: folderEmptyContainer
             visible: false  
@@ -194,7 +239,14 @@ Page {
                             ActionSet {
                                 id: documentActionSet
                                 title: ListItemData.name
-                                subtitle: ( ListItemData.type == 'folder' ? 'Folder' : ''); 
+                                subtitle: ( ListItemData.type == 'folder' ? 'Folder' : '');
+                                ActionItem {
+                                    title: "Move"
+                                    imageSource: "asset:///images/icon-file-move.png"
+                                    onTriggered: {
+                                        fileComponent.ListItem.view.actionMoveListItem(fileComponent.ListItem.indexPath);
+                                    }
+                                }
                                 ActionItem {
                                     title: "Share"
                                     enabled: ( ListItemData.type != 'folder' )
@@ -255,6 +307,13 @@ Page {
             }
             multiSelectHandler {
                 actions: [
+                    ActionItem {
+                        title: "Move"
+                        imageSource: "asset:///images/icon-file-move.png"
+                        onTriggered: {
+                            documentListView.actionMoveSelectedItems();
+                        }
+                    },
                     DeleteActionItem {
                         onTriggered: {
                             console.log('[documentBrowser-multiSelectHandler]DeleteAction:length:', documentListView.selectionList().length );
@@ -334,6 +393,23 @@ Page {
                 }
             }
 
+            function actionMoveSelectedItems() {
+                console.log('[DocumentBrowser]actionMoveSelectedItems');
+                var selection = selectionList();
+                var fileList = [];
+                for (var i = 0; i < selection.length; i ++) {
+                    if (selection[i].length > 0) {
+                        var indexPath = selection[i][0];
+                        var entry = fileModels.value(indexPath);
+                        fileList.push( entry.path );
+                    }
+                }
+                
+                if (fileList.length > 0) {
+                    writerApp.registerClipboard(documentPath, fileList);
+                }
+            }
+
             function actionDeleteSelectedItems() {
                 console.log('actionDeleteSelectedItems');
                 var selection = selectionList();
@@ -369,6 +445,16 @@ Page {
                 updateFolderEmptyIndicator();
 
                 showMessageToast( successMessage );
+            }
+            
+            function actionMoveListItem( indexPath ) {                
+                console.log('actionMoveListItem', indexPath);                                
+                if (indexPath >= fileModels.size()) return;
+
+                var entry = fileModels.value(indexPath);
+                var list = [];
+                list.push( entry.path );
+                writerApp.registerClipboard( documentPath, list );
             }
             
             function actionShareListItem( indexPath ) {
@@ -571,6 +657,7 @@ Page {
         var newBrowser = documentBrowserPageDef.createObject();
         newBrowser.documentPath = relativePath;
         newBrowser.reloadDirectory();
+        newBrowser.updateFileMover();
         newBrowser.enableTitleEditing();
         
         newBrowser.folderNameChanged.connect(onSubfolderNameChanged);
@@ -799,6 +886,7 @@ Page {
             themeRowTextColor = themeInfo.textColor;
             rowDividerColor = themeInfo.dividerColor;
             rowHighlightColor = themeInfo.rowHighlightColor;
+            moveDescriptionLabel.textStyle.resetColor();
             pageRootContainer.resetBackground();
             titleTextField.textStyle.resetColor();
             folderEmptyLabel.textStyle.resetColor();
@@ -810,9 +898,9 @@ Page {
             pageRootContainer.background = Color.create( themeInfo.backgroundColor );                
         }
         if (themeInfo.hasOwnProperty('textColor')) {            
-            titleTextField.textStyle.color = Color.create( themeInfo.textColor );
-            folderEmptyLabel.textStyle.color = Color.create(themeInfo.textColor);
-            
+            titleTextField.textStyle.color       = Color.create( themeInfo.textColor );
+            folderEmptyLabel.textStyle.color     = Color.create(themeInfo.textColor);
+            moveDescriptionLabel.textStyle.color = Color.create(themeInfo.textColor);
             // a dilemma
             // listitem's color changed automatically when themeRowTextColor property changed
             // there must be a binding with themeRowTextColor property somewhere ?? #clueless
@@ -863,6 +951,16 @@ Page {
     
     function onRestoreActionSelected() {
         writerApp.actionRestore();
+    }
+    
+    function updateFileMover() {
+        if (writerApp.isClipboardEmpty()) {
+            fileMoverContainer.visible = false;
+        } else {
+            fileMoverContainer.visible = true;
+            moveButton.enabled = ( documentPath != writerApp.clipboardRelativePath() );
+            moveDescriptionLabel.text = writerApp.clipboardDescription();
+        }
     }
     
 } // end of Page

@@ -131,5 +131,11 @@ NavigationPane {
             }
         }
     }
+    
+    /**
+     * Do nothing
+     */
+    function onClipboardChanged() {}
+    function onFilesMoved() {}
 
 }// end of NavigationPane
