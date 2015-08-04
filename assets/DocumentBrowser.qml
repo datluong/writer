@@ -18,14 +18,14 @@ Page {
     property string rowHighlightColor: '';
     property variant themePickerSheet;
     property variant backupRestoreSheet;
-    
+
     signal folderNameChanged();
-    
+
     Container {
         id: pageRootContainer
         layout: StackLayout {}
         leftPadding: 24
-        rightPadding: 24        
+        rightPadding: 24
         Container{}
         Container {
             // title Container
@@ -46,7 +46,7 @@ Page {
 
             TextField {
                 id: titleTextField
-                enabled: false            
+                enabled: false
                 textStyle.fontWeight: FontWeight.W600
                 text: "WRITER"
                 implicitLayoutAnimationsEnabled: false
@@ -65,8 +65,8 @@ Page {
             }
             TextField {
                 // this dummy textfield will make titleTextField loses focus on ENTER key
-                id: assistTextField                
-                visible: false                
+                id: assistTextField
+                visible: false
             }
         } // end Title Container
         Container {
@@ -107,7 +107,7 @@ Page {
         Container {
             id: fileMoverContainer
             horizontalAlignment: HorizontalAlignment.Fill
-            topPadding: 8           
+            topPadding: 8
             visible: false
             Container {
                 horizontalAlignment: HorizontalAlignment.Fill
@@ -120,7 +120,7 @@ Page {
                     onClicked: {
                         writerApp.clearClipboard();
                     }
-                    
+
                 }
                 Label {
                     id: moveDescriptionLabel
@@ -143,14 +143,14 @@ Page {
                 topMargin: 8
                 bottomMargin: 0
                 preferredHeight: 2
-                horizontalAlignment: HorizontalAlignment.Fill                
+                horizontalAlignment: HorizontalAlignment.Fill
                 background: documentListView.themedDividerColor();
             }
 
         }
         Container {
             id: folderEmptyContainer
-            visible: false  
+            visible: false
             horizontalAlignment: HorizontalAlignment.Fill
             topPadding: 32
             Label {
@@ -163,9 +163,9 @@ Page {
         // listview
         ListView {
             id: documentListView
-            dataModel: fileModels                   
-            listItemComponents: [                
-                ListItemComponent {                    
+            dataModel: fileModels
+            listItemComponents: [
+                ListItemComponent {
                     Container {
 //                        preferredWidth: ListItem.view.determineFullWidth();
                         preferredWidth: 2000
@@ -179,8 +179,8 @@ Page {
 
                         function themedRowHighlightColor_() {
                             return ListItem.view.themedRowHighlightColor();
-                        } 
-                        
+                        }
+
                         function descriptionForFileInfo(fileInfo) {
                             if (fileInfo.hasOwnProperty('description')) {
                                 console.log('descriptionForFileInfo:using:description');
@@ -191,7 +191,7 @@ Page {
                                 var measure = TimeAssist.measureDistance( fileInfo.modified );
                                 return measure.description;
                             }
-                        }                        
+                        }
                         id: fileComponent
                         Container {
                             property int containterWith: 0
@@ -206,7 +206,7 @@ Page {
                                 textStyle.fontWeight: FontWeight.W200
                                 textStyle.color: themedRowTextColor_();
                                 verticalAlignment: VerticalAlignment.Center
-                                
+
                             }
                             Label {
                                 text: ((ListItemData.type == 'folder') ? "Folder" : descriptionForFileInfo(ListItemData) )
@@ -218,13 +218,13 @@ Page {
                                 textStyle.color: themedRowTextColor_()
                                 attachedObjects: [
                                     LayoutUpdateHandler {
-                                        onLayoutFrameChanged: {                                                    
+                                        onLayoutFrameChanged: {
                                             console.log('[folderIndicator]onLayoutFrameChanged', layoutFrame.width, 'containerWidth', listItemContainer.containterWith);
                                             documentNameLabel.setMaxWidth( listItemContainer.containterWith - layoutFrame.width - 36 );
                                         }
                                     }
                                 ]
-                            }                    
+                            }
                         } // end ListItem's main Container
 
                         Container { //divider
@@ -235,8 +235,8 @@ Page {
 //                            background: Color.create('#e4e4e4');
                             background: themedDividerColor_();
                         }
-                        
-                        contextActions: [                            
+
+                        contextActions: [
                             ActionSet {
                                 id: documentActionSet
                                 title: ListItemData.name
@@ -264,7 +264,7 @@ Page {
                                 }
                             }
                         ] // end of Context Action
-                        
+
                         ListItem.onSelectionChanged: {
                             console.log('ListItem.onSelectionChanged', selected);
                             listItemContainer.background = selected ? themedRowHighlightColor_() : Color.Transparent;
@@ -273,7 +273,7 @@ Page {
                             var activeChangable = active;
                             var selection = ListItem.view.selectionList();
                             console.log('ListItem.onActivationChanged', active,'indexPath:', ListItem.indexPath, 'selectionLength:',selection.length, 'selections:', selection, 'indexOf', selection.indexOf(ListItem.indexPath), 'selectType',typeof(selection));
-                            
+
                             if (selection.length > 0) {
                                 for (var i = 0; i < selection.length; i++) {
                                     console.log('listing selection #',i, ':',selection[i]);
@@ -300,8 +300,8 @@ Page {
                                     listItemContainer.containterWith = layoutFrame.width;
                                 }
                             }
-                        ]                        
-                    }  // end ListItem's mainContainer                  
+                        ]
+                    }  // end ListItem's mainContainer
                 } // end ListItemComponent Definition
             ]
             multiSelectAction: MultiSelectActionItem {
@@ -322,32 +322,32 @@ Page {
                         }
                     }
                 ]
-                status: 'None selected'                                
+                status: 'None selected'
             } // end of ListView's multiSelectHandler
-                                
+
             attachedObjects: [
                 ArrayDataModel {
                     id: fileModels
                 }
             ]
-            
+
             onSelectionChanged: {
                 console.log('selectionChanged -> ', indexPath, 'selectionLength', selectionList().length);
                 var itemSelected = selectionList().length;
                 var stat = statsForSelectedIndexes();
                 if (itemSelected == 0) {
                     multiSelectHandler.status = 'None selected';
-                }  
-                else if (itemSelected == 1) {                    
+                }
+                else if (itemSelected == 1) {
                     multiSelectHandler.status = (stat.documents > 0 ? '1 document selected' : '1 folder selected');
                 }
                 else {
                     var type = 'documents';
-                    if ( stat.folders > 0 && stat.documents > 0) 
+                    if ( stat.folders > 0 && stat.documents > 0)
                         type = 'items';
                     if ( stat.documents == 0 )
                         type = 'folders';
-                        
+
                     multiSelectHandler.status = '' + itemSelected + ' ' + type + ' selected';
                 }
             }
@@ -356,13 +356,13 @@ Page {
                 if (indexPath >= fileModels.size()) return;
                 var entry = fileModels.value( indexPath );
                 if (entry.type == 'file') {
-                    actionOpenFile( entry, {focusEditor:true} );                    
+                    actionOpenFile( entry, {focusEditor:true} );
                 }
                 else if (entry.type == 'folder' ) {
                     actionOpenFolder( entry, {} );
                 }
             }
-            
+
             /**
              * @return a list of indexPath when the list is in multi-select mode
              */
@@ -374,9 +374,9 @@ Page {
                 }
                 return list;
             }
-            
+
             /**
-             * Count the number of selected folders and documents when the list is in multi-select mode 
+             * Count the number of selected folders and documents when the list is in multi-select mode
              */
             function statsForSelectedIndexes() {
                 var indexes = selectedIndexPaths();
@@ -384,11 +384,11 @@ Page {
                 var folderCount = 0;
                 for (var i = 0; i < indexes.length; i++) {
                     var entry = fileModels.value( indexes[i] );
-                    if (entry.type == 'folder') 
+                    if (entry.type == 'folder')
                         folderCount++;
                     else documentCount ++;
                 }
-                return { 
+                return {
                     documents: documentCount,
                     folders: folderCount
                 }
@@ -405,7 +405,7 @@ Page {
                         fileList.push( entry.path );
                     }
                 }
-                
+
                 if (fileList.length > 0) {
                     writerApp.registerClipboard(documentPath, fileList);
                 }
@@ -424,7 +424,7 @@ Page {
                         if (selection[i].length > 0)
                             deleteIndexPaths.push( selection[i][0] );
                     }
-                    
+
                     // reverse sort
                     deleteIndexPaths.sort(function(a,b){return b-a});
                     if (deleteIndexPaths.length > 0) {
@@ -437,19 +437,19 @@ Page {
                                     fileModels.removeAt(indexPath);
                             }
                             else if (entry.type == 'file') {
-                                if (writerApp.deleteFile(entry.path)) 
+                                if (writerApp.deleteFile(entry.path))
                                     fileModels.removeAt(indexPath);
                             }
-                        }    
+                        }
                     }
                 }
                 updateFolderEmptyIndicator();
 
                 showMessageToast( successMessage );
             }
-            
-            function actionMoveListItem( indexPath ) {                
-                console.log('actionMoveListItem', indexPath);                                
+
+            function actionMoveListItem( indexPath ) {
+                console.log('actionMoveListItem', indexPath);
                 if (indexPath >= fileModels.size()) return;
 
                 var entry = fileModels.value(indexPath);
@@ -457,29 +457,29 @@ Page {
                 list.push( entry.path );
                 writerApp.registerClipboard( documentPath, list );
             }
-            
+
             function actionShareListItem( indexPath ) {
                 console.log('actionShareListItem:indexPath', indexPath);
                 if ( indexPath >= fileModels.size() ) return;
-                
+
                 var entry = fileModels.value( indexPath );
                 if ( entry.type != 'file') return;
                 if ( !writerApp.isFileLoadable( entry.path ) ) return;
-                
+
                 var content = writerApp.loadFileContent( entry.path );
                 writerApp.actionShareDocumentAsAttachment( entry.name, content );
             }
-            
+
             function actionDeleteListItem( indexPath) {
                 console.log('actionDeleteListItem:indexPath', indexPath );
                 if ( indexPath >= fileModels.size() ) return;
-                
+
                 var entry = fileModels.value(indexPath);
                 deleteConfirmationDialog.body = entry.type == 'file'? 'Delete the selected document?':'Delete the selected folder?';
                 deleteConfirmationDialog.exec();
                 var status = deleteConfirmationDialog.result;
                 if (status == SystemUiResult.ConfirmButtonSelection) {
-                    if (indexPath > fileModels.size()) return;                
+                    if (indexPath > fileModels.size()) return;
                     if (entry.type == 'folder') {
                         if ( writerApp.deleteFolder(entry.path) ) {
                             showMessageToast( "Folder is deleted");
@@ -494,19 +494,19 @@ Page {
                     }
                 }
                 updateFolderEmptyIndicator();
-            }        
-            
+            }
+
             /**
              * Wrapper method
              */
             function loadFileContent_(path) {
                 return writerApp.loadFileContent(path);
             }
-            
+
             function determineFullWidth() {
                 return writerApp.displayWidthForCurrentOrientation();
             }
-            
+
             function themedRowTextColor() {
                 console.log('themedRowTextColor');
                 if (themeRowTextColor.length > 0) {
@@ -515,7 +515,7 @@ Page {
                 else
                     return null;
             }
-            
+
             function themedDividerColor() {
                 console.log('themedDividerColor');
                 if (rowDividerColor.length > 0)
@@ -523,20 +523,20 @@ Page {
                 else
                     return Color.create('#e4e4e4');
             }
-            
+
             function themedRowHighlightColor() {
                 console.log('themedRowHighlightColor');
                 if (rowHighlightColor.length > 0)
                     return Color.create(rowHighlightColor);
                 else
-                    return Color.create('#ebebeb'); 
+                    return Color.create('#ebebeb');
             }
-            
+
         } // end of ListView
 
-        
+
     } // end of Root Container
-    actions: [        
+    actions: [
         ActionItem {
             title: "New Document"
             ActionBar.placement: ActionBarPlacement.OnBar
@@ -580,7 +580,7 @@ Page {
             }
         },
         ActionItem {
-            title: "Backup/Restore"            
+            title: "Backup/Restore"
             ActionBar.placement: ActionBarPlacement.InOverflow
             imageSource: "asset:///images/icon-backup.png"
             onTriggered: {
@@ -588,12 +588,12 @@ Page {
             }
         }
     ]
-    
+
     onCreationCompleted: {
         console.log('[DocumentBrowser]onCreationCompleted:documentPath:', documentPath );
 //        console.log( TimeAssist.measureDistance( new Date(2010,2,3) ).description );
 //        console.log( TimeAssist.measureDistance( new Date(2015,2,3) ).description );
-        
+
 //        fileModels.append({
 //                name: 'My random thoughts asdsadlkjsa dlkasjdlsakjdaslkd aslkjdaslkdj asl dalskjdaslkdj asd laskjdslakjda',
 //                type: 'folder'
@@ -607,31 +607,31 @@ Page {
 //                type: 'file'
 //            }); return;
         reloadDirectory();
-        
+
         var lastEditedDocumentInfo = writerApp.lastDocumentInEditing();
         if (lastEditedDocumentInfo.hasOwnProperty('path')) {
-            actionOpenFile( lastEditedDocumentInfo, {focusEditor:true});   
+            actionOpenFile( lastEditedDocumentInfo, {focusEditor:true});
         }
-              
+
         // update sort type
         var sortType = writerApp.browserSortType();
         sortTypeDropdown.setSelectedIndex( sortType == 'name' ? 0 : 1 );
         initialized_ =  true;
     }
-    
+
     function disableRenaming() {
         documentBrowserPage.removeAction( renameFolderActionItem );
     }
-    
+
     function reloadDirectory() {
         fileModels.clear();
         var itemData = writerApp.listDirectory(documentPath);
         fileModels.append(itemData);
         updateTitle();
-        
+
         updateFolderEmptyIndicator();
     }
-    
+
     /**
      * Bind documentPath to title field
      **/
@@ -652,59 +652,59 @@ Page {
             return;
         if (options === null || options === undefined)
             options = {};
-            
+
         console.log('[DocumentBrowser]actionOpenFolder:',folderInfo.path);
         var relativePath = writerApp.relativePath( folderInfo.path );
         console.log('[DocumentBrowser]relativePath',relativePath);
-        
+
         var newBrowser = documentBrowserPageDef.createObject();
         newBrowser.documentPath = relativePath;
         newBrowser.reloadDirectory();
         newBrowser.updateFileMover();
         newBrowser.enableTitleEditing();
-        
+
         newBrowser.folderNameChanged.connect(onSubfolderNameChanged);
-        
+
         newBrowser.applyCustomTheme( themeManager.currentTheme() );
-        
+
         rootNavigationPane.push(newBrowser);
         newBrowser.documentBrowserInitialized = true;
-        
+
         if (options.editFolderName == true) {
             newBrowser.beginEditFolder();
         }
     }
-    
+
     function enableTitleEditing() {
         titleTextField.enabled = true;
     }
-    
+
     function beginEditFolder() {
         titleTextField.editor.setSelection( 0, titleTextField.text.length );
         titleTextField.requestFocus();
     }
-    
+
     /**
      * @param    options    :focusEditor
      *                      :focusTitle
-     *                      :clearTitle 
+     *                      :clearTitle
      */
     function actionOpenFile(fileInfo, options) {
-        if (options === undefined || options === null) 
+        if (options === undefined || options === null)
             options = {};
-            
+
         console.log('[Document Browser]:actionOpenFile', fileInfo);
         var filePath = fileInfo.path;
         if ( !writerApp.isFileLoadable(filePath) ) {
             //TODO show error message
             return;
         }
-        
+
         var text = writerApp.loadFileContent( filePath );
         console.log('contentInfo', text.length, 'type', typeof(text) );
         if (text == '' || text.length == 0 || typeof(text) != 'string' )
             text = '';
-        
+
         // load the file and push the editor screen to view
         var editor = editorPageDef.createObject();
         editor.documentTitle = fileInfo.name;
@@ -713,10 +713,10 @@ Page {
         editor.documentTitleUpdated.connect( onDocumentTitleUpdated );
         editor.documentUpdated.connect( onDocumentUpdated );
         editor.beginEditing();
-        
+
         editor.applyCustomTheme(themeManager.currentTheme());
         rootNavigationPane.push(editor);
-        
+
         writerApp.registerDocumentInEditing( filePath );
 
         if (options.focusEditor) {
@@ -728,19 +728,19 @@ Page {
         if (options.clearTitle)
             editor.clearTitle();
     }
-    
+
     /*
      * {event_handler}
-     */ 
+     */
     function onDocumentTitleUpdated( newTitle ) {
         reloadDirectory();
     }
-    
+
     /**
      * {event_handler}
-     */ 
+     */
     function onDocumentUpdated( path ) {
-        
+
         for (var i = 0 ; i < fileModels.size(); i++) {
             var entry = fileModels.value(i);
             if (entry.path == path) {
@@ -749,10 +749,10 @@ Page {
                     var measure = TimeAssist.measureDistance( updatedEntry.modified );
                     updatedEntry.description = measure.description;
                     updatedEntry.nextRefresh = measure.nextRefresh;
-                                                        
+
                     fileModels.replace(i, updatedEntry);
-                    
-                    // if the index of the item changed, move it up                    
+
+                    // if the index of the item changed, move it up
                     if (writerApp.browserSortType() != 'name') {
                         var newPos = -1;
                         var itemData = writerApp.listDirectory(documentPath);
@@ -761,11 +761,11 @@ Page {
                                 newPos = j; break;
                             }
                         if (newPos != -1 && newPos != i) {
-                            fileModels.move(i, newPos);           
+                            fileModels.move(i, newPos);
                         }
                     }
                 }
-                
+
                 break;
             }
         }
@@ -774,19 +774,19 @@ Page {
     function onSubfolderNameChanged() {
         reloadDirectory();
     }
-    
+
     /**
      * Create a new untitled folder
-     */     
+     */
     function actionNewFolder() {
         var newFolder = writerApp.createEmptyFolder( documentPath );
         console.log('[DocumentBrowser]actionNewFolder', newFolder);
         reloadDirectory();
-        
+
         // open folder
         actionOpenFolder( newFolder, {editFolderName:true} );
     }
-    
+
     /**
      * Create a new untitled document and open the editor to edit
      */
@@ -835,19 +835,19 @@ Page {
             documentListView.visible = true;
             folderEmptyContainer.visible = false;
         }
-    }    
+    }
 
 //    /**
 //     * This handler is invoked when the Document Browser is pushed onto the stack
-//     * when the push animation is ended 
-//     */ 
+//     * when the push animation is ended
+//     */
 //    function handlePushEndedEvent() {
-//        updateFolderEmptyIndicator();    
+//        updateFolderEmptyIndicator();
 //    }
 
 
     /**
-     * This handler is invoked periodically by the writerApp instance 
+     * This handler is invoked periodically by the writerApp instance
      */
     function handlePeriodicEvent() {
         console.log('[DocumentBrowser]handlePeriodicEvent');
@@ -857,10 +857,10 @@ Page {
                 if (entry.hasOwnProperty('nextRefresh')) {
                     // only update if the time is passed
                     var nowTs = (new Date()).getTime();
-                    if (nowTs < entry.nextRefresh) 
-                        continue;                    
+                    if (nowTs < entry.nextRefresh)
+                        continue;
                 }
-             
+
                 var measure = TimeAssist.measureDistance( entry.modified );
                 entry.description = measure.description;
                 entry.nextRefresh = measure.nextRefresh;
@@ -868,7 +868,7 @@ Page {
             }
         }
     }
-    
+
     function showMessageToast( message ) {
         mainMessageToast.body = message;
         mainMessageToast.show();
@@ -883,7 +883,7 @@ Page {
             themeSupport: true
         };
     }
-    
+
     function applyCustomTheme( themeInfo ) {
         if (themeInfo.name == 'Light') {
             themeRowTextColor = themeInfo.textColor;
@@ -896,22 +896,22 @@ Page {
             mainDivider.background = Color.create( themeInfo.titleDividerColor );
             return;
         }
-        
+
         if (themeInfo.hasOwnProperty('backgroundColor')) {
-            pageRootContainer.background = Color.create( themeInfo.backgroundColor );                
+            pageRootContainer.background = Color.create( themeInfo.backgroundColor );
         }
-        if (themeInfo.hasOwnProperty('textColor')) {            
+        if (themeInfo.hasOwnProperty('textColor')) {
             titleTextField.textStyle.color       = Color.create( themeInfo.textColor );
             folderEmptyLabel.textStyle.color     = Color.create(themeInfo.textColor);
             moveDescriptionLabel.textStyle.color = Color.create(themeInfo.textColor);
             // a dilemma
             // listitem's color changed automatically when themeRowTextColor property changed
             // there must be a binding with themeRowTextColor property somewhere ?? #clueless
-            themeRowTextColor = themeInfo.textColor;            
+            themeRowTextColor = themeInfo.textColor;
         }
         if (themeInfo.hasOwnProperty('dividerColor')) {
-            rowDividerColor = themeInfo.dividerColor;            
-        } 
+            rowDividerColor = themeInfo.dividerColor;
+        }
         if (themeInfo.hasOwnProperty('titleDividerColor')) {
             mainDivider.background = Color.create( themeInfo.titleDividerColor );
         }
@@ -926,15 +926,15 @@ Page {
         themePickerSheet.themePicked.connect( onThemePicked );
         themePickerSheet.open();
     }
-    
+
     function onThemePicked(themeName) {
         themeManager.setTheme(themeName);
     }
-    
+
     function onThemePickerSheetClosed() {
         themePickerSheet.destroy();
     }
-    
+
     ///////////////////////////////////////////////////////////////////////////
     function actionBackupRestore() {
         backupRestoreSheet = backupRestoreSheetDef.createObject();
@@ -943,7 +943,7 @@ Page {
         backupRestoreSheet.restore.connect( onRestoreActionSelected );
         backupRestoreSheet.open();
     }
-    
+
     function onBackupRestoreSheetClosed() {
         backupRestoreSheet.destroy();
     }
@@ -951,11 +951,11 @@ Page {
     function onBackupActionSelected() {
         writerApp.actionBackup();
     }
-    
+
     function onRestoreActionSelected() {
         writerApp.actionRestore();
     }
-    
+
     function updateFileMover() {
         if (writerApp.isClipboardEmpty()) {
             fileMoverContainer.visible = false;
@@ -965,5 +965,5 @@ Page {
             moveDescriptionLabel.text = writerApp.clipboardDescription();
         }
     }
-    
+
 } // end of Page
