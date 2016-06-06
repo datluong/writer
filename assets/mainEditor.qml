@@ -76,7 +76,7 @@ NavigationPane {
         rootEditor.setEditorBodyContent(text);        
         rootEditor.beginEditing();
 
-        rootEditorr.focusEditor();        
+        rootEditor.focusEditor();        
     }
 
     function experimentZone() {

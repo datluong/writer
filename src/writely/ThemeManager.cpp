@@ -291,6 +291,7 @@ QString ThemeManager::defaultThemeName() {
 }
 
 void ThemeManager::setTheme(QString themeName) {
+    qDebug() << "ThemeManager::setTheme" << themeName;
 	// themeName must exists
 	if (!mThemeDictionary.keys().contains(themeName)) return;
 
